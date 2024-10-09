@@ -4,6 +4,7 @@
 -- Please verify the generated scripts and execute them against the target DB server.
 
 DROP TABLE IF EXISTS `TutorNStudent`;
+DROP TABLE IF EXISTS `Review`;
 DROP TABLE IF EXISTS `Payment`;
 DROP TABLE IF EXISTS `Session`;
 DROP TABLE IF EXISTS `Tutor`;
@@ -62,7 +63,6 @@ CREATE TABLE `QuizTaken` (
 );
 
 
-
 CREATE TABLE `Tutor` (
 	`tutorId` VARCHAR(191) NOT NULL,
 	`firstName` VARCHAR(191) NOT NULL,
@@ -70,27 +70,17 @@ CREATE TABLE `Tutor` (
 	`email` VARCHAR(191) NOT NULL,
 	`password` VARCHAR(191) NOT NULL,
 	`experienceYears` INT NOT NULL,
+	`price` INT NOT NULL,
 	`subjectsSubjectId` VARCHAR(191) NOT NULL,
 	FOREIGN KEY(`subjectsSubjectId`) REFERENCES `Subject`(`subjectId`),
 	PRIMARY KEY(`tutorId`)
 );
 
-CREATE TABLE `TutorNStudent` (
-	`id` VARCHAR(191) NOT NULL,
-	`tutorTutorId` VARCHAR(191) NOT NULL,
-	FOREIGN KEY(`tutorTutorId`) REFERENCES `Tutor`(`tutorId`),
-	`studentStudentId` VARCHAR(191) NOT NULL,
-	FOREIGN KEY(`studentStudentId`) REFERENCES `Student`(`studentId`),
-	PRIMARY KEY(`id`)
-);
-
-
 CREATE TABLE `Session` (
 	`sessionId` VARCHAR(191) NOT NULL,
-	`date` VARCHAR(191) NOT NULL,
-	`startTime` VARCHAR(191) NOT NULL,
-	`endTime` VARCHAR(191) NOT NULL,
-	`status` VARCHAR(191) NOT NULL,
+	`sessionTime` DATETIME NOT NULL,
+	`duration` INT NOT NULL,
+	`status` ENUM('SCHEDULED', 'CANCELLED', 'STARTED', 'ENDED') NOT NULL,
 	`isBooked` BOOLEAN NOT NULL,
 	`tutorTutorId` VARCHAR(191) NOT NULL,
 	FOREIGN KEY(`tutorTutorId`) REFERENCES `Tutor`(`tutorId`),
@@ -102,7 +92,7 @@ CREATE TABLE `Session` (
 CREATE TABLE `Payment` (
 	`paymentId` VARCHAR(191) NOT NULL,
 	`amount` INT NOT NULL,
-	`status` VARCHAR(191) NOT NULL,
+	`status` ENUM('PENDING', 'PAID') NOT NULL,
 	`paymentMethod` VARCHAR(191) NOT NULL,
 	`transactionDate` VARCHAR(191) NOT NULL,
 	`sessionSessionId` VARCHAR(191) UNIQUE NOT NULL,
@@ -110,5 +100,27 @@ CREATE TABLE `Payment` (
 	PRIMARY KEY(`paymentId`)
 );
 
+
+
+
+CREATE TABLE `Review` (
+	`reviewId` VARCHAR(191) NOT NULL,
+	`review` VARCHAR(191) NOT NULL,
+	`starRating` INT NOT NULL,
+	`studentStudentId` VARCHAR(191) UNIQUE NOT NULL,
+	FOREIGN KEY(`studentStudentId`) REFERENCES `Student`(`studentId`),
+	`tutorTutorId` VARCHAR(191) NOT NULL,
+	FOREIGN KEY(`tutorTutorId`) REFERENCES `Tutor`(`tutorId`),
+	PRIMARY KEY(`reviewId`)
+);
+
+CREATE TABLE `TutorNStudent` (
+	`id` VARCHAR(191) NOT NULL,
+	`tutorTutorId` VARCHAR(191) NOT NULL,
+	FOREIGN KEY(`tutorTutorId`) REFERENCES `Tutor`(`tutorId`),
+	`studentStudentId` VARCHAR(191) NOT NULL,
+	FOREIGN KEY(`studentStudentId`) REFERENCES `Student`(`studentId`),
+	PRIMARY KEY(`id`)
+);
 
 

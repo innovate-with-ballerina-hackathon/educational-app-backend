@@ -3,10 +3,24 @@
 // This file is an auto-generated file by Ballerina persistence layer for model.
 // It should not be modified by hand.
 
+import ballerina/time;
+
+public enum PaymentStatus {
+    PENDING,
+    PAID
+}
+
+public enum SessionStatus {
+    SCHEDULED,
+    CANCELLED,
+    STARTED,
+    ENDED
+}
+
 public type Payment record {|
     readonly string paymentId;
     int amount;
-    string status;
+    PaymentStatus status;
     string paymentMethod;
     string transactionDate;
     string sessionSessionId;
@@ -15,7 +29,7 @@ public type Payment record {|
 public type PaymentOptionalized record {|
     string paymentId?;
     int amount?;
-    string status?;
+    PaymentStatus status?;
     string paymentMethod?;
     string transactionDate?;
     string sessionSessionId?;
@@ -32,7 +46,7 @@ public type PaymentInsert Payment;
 
 public type PaymentUpdate record {|
     int amount?;
-    string status?;
+    PaymentStatus status?;
     string paymentMethod?;
     string transactionDate?;
     string sessionSessionId?;
@@ -42,10 +56,9 @@ public type Session record {|
     readonly string sessionId;
     string tutorTutorId;
     string studentStudentId;
-    string date;
-    string startTime;
-    string endTime;
-    string status;
+    time:Civil sessionTime;
+    int duration;
+    SessionStatus status;
 
     boolean isBooked;
 |};
@@ -54,10 +67,9 @@ public type SessionOptionalized record {|
     string sessionId?;
     string tutorTutorId?;
     string studentStudentId?;
-    string date?;
-    string startTime?;
-    string endTime?;
-    string status?;
+    time:Civil sessionTime?;
+    int duration?;
+    SessionStatus status?;
     boolean isBooked?;
 |};
 
@@ -75,11 +87,43 @@ public type SessionInsert Session;
 public type SessionUpdate record {|
     string tutorTutorId?;
     string studentStudentId?;
-    string date?;
-    string startTime?;
-    string endTime?;
-    string status?;
+    time:Civil sessionTime?;
+    int duration?;
+    SessionStatus status?;
     boolean isBooked?;
+|};
+
+public type Review record {|
+    readonly string reviewId;
+    string review;
+    int starRating;
+    string studentStudentId;
+    string tutorTutorId;
+|};
+
+public type ReviewOptionalized record {|
+    string reviewId?;
+    string review?;
+    int starRating?;
+    string studentStudentId?;
+    string tutorTutorId?;
+|};
+
+public type ReviewWithRelations record {|
+    *ReviewOptionalized;
+    StudentOptionalized student?;
+    TutorOptionalized tutor?;
+|};
+
+public type ReviewTargetType typedesc<ReviewWithRelations>;
+
+public type ReviewInsert Review;
+
+public type ReviewUpdate record {|
+    string review?;
+    int starRating?;
+    string studentStudentId?;
+    string tutorTutorId?;
 |};
 
 public type Tutor record {|
@@ -92,6 +136,8 @@ public type Tutor record {|
     string subjectsSubjectId;
 
     int experienceYears;
+    int price;
+
 |};
 
 public type TutorOptionalized record {|
@@ -102,6 +148,7 @@ public type TutorOptionalized record {|
     string password?;
     string subjectsSubjectId?;
     int experienceYears?;
+    int price?;
 |};
 
 public type TutorWithRelations record {|
@@ -109,6 +156,7 @@ public type TutorWithRelations record {|
     TutorNStudentOptionalized[] students?;
     SubjectOptionalized subjects?;
     SessionOptionalized[] sessions?;
+    ReviewOptionalized[] reviews?;
 |};
 
 public type TutorTargetType typedesc<TutorWithRelations>;
@@ -122,6 +170,7 @@ public type TutorUpdate record {|
     string password?;
     string subjectsSubjectId?;
     int experienceYears?;
+    int price?;
 |};
 
 public type Subject record {|
@@ -279,6 +328,7 @@ public type StudentWithRelations record {|
     *StudentOptionalized;
     SessionOptionalized[] sessions?;
     TutorNStudentOptionalized[] tutors?;
+    ReviewOptionalized review?;
 |};
 
 public type StudentTargetType typedesc<StudentWithRelations>;

@@ -1,25 +1,46 @@
 import ballerina/persist as _;
+import ballerina/time;
 
 public type Payment record {|
     readonly string paymentId;
     int amount;
-    string status;
+    PaymentStatus status;
     string paymentMethod;
     string transactionDate;
     Session session;
 |};
 
+public enum PaymentStatus {
+    PENDING, 
+    PAID
+}
+
 public type Session record {|
     readonly string sessionId;
     Tutor tutor;
     Student student;
-    string date;
-    string startTime;
-    string endTime;
-    string status;
+    time:Civil sessionTime;
+    int duration;
+    SessionStatus status;
     Payment? payment;
     boolean isBooked;
     
+|};
+
+public enum SessionStatus {
+    SCHEDULED, 
+    CANCELLED,
+    STARTED,
+    ENDED   
+}
+
+
+public type Review record {|
+    readonly string reviewId;
+    string review;
+    int starRating;
+    Student student;
+	Tutor tutor;    
 |};
 
 public type Tutor record {|
@@ -32,6 +53,8 @@ public type Tutor record {|
     Subject subjects;
     Session[] sessions;
     int experienceYears;
+    int price;
+    Review[] reviews;
     
 |};
 
@@ -78,6 +101,7 @@ public type Student record{|
     string password;
     Session[] sessions;
     TutorNStudent[] tutors;
+	Review? review;
     
 |};
 

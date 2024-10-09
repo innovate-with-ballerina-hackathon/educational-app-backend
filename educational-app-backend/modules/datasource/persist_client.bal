@@ -12,6 +12,7 @@ import ballerinax/persist.sql as psql;
 
 const PAYMENT = "payments";
 const SESSION = "sessions";
+const REVIEW = "reviews";
 const TUTOR = "tutors";
 const SUBJECT = "subjects";
 const OPTION = "options";
@@ -42,9 +43,8 @@ public isolated client class Client {
                 "session.sessionId": {relation: {entityName: "session", refField: "sessionId"}},
                 "session.tutorTutorId": {relation: {entityName: "session", refField: "tutorTutorId"}},
                 "session.studentStudentId": {relation: {entityName: "session", refField: "studentStudentId"}},
-                "session.date": {relation: {entityName: "session", refField: "date"}},
-                "session.startTime": {relation: {entityName: "session", refField: "startTime"}},
-                "session.endTime": {relation: {entityName: "session", refField: "endTime"}},
+                "session.sessionTime": {relation: {entityName: "session", refField: "sessionTime"}},
+                "session.duration": {relation: {entityName: "session", refField: "duration"}},
                 "session.status": {relation: {entityName: "session", refField: "status"}},
                 "session.isBooked": {relation: {entityName: "session", refField: "isBooked"}}
             },
@@ -58,9 +58,8 @@ public isolated client class Client {
                 sessionId: {columnName: "sessionId"},
                 tutorTutorId: {columnName: "tutorTutorId"},
                 studentStudentId: {columnName: "studentStudentId"},
-                date: {columnName: "date"},
-                startTime: {columnName: "startTime"},
-                endTime: {columnName: "endTime"},
+                sessionTime: {columnName: "sessionTime"},
+                duration: {columnName: "duration"},
                 status: {columnName: "status"},
                 isBooked: {columnName: "isBooked"},
                 "tutor.tutorId": {relation: {entityName: "tutor", refField: "tutorId"}},
@@ -70,6 +69,7 @@ public isolated client class Client {
                 "tutor.password": {relation: {entityName: "tutor", refField: "password"}},
                 "tutor.subjectsSubjectId": {relation: {entityName: "tutor", refField: "subjectsSubjectId"}},
                 "tutor.experienceYears": {relation: {entityName: "tutor", refField: "experienceYears"}},
+                "tutor.price": {relation: {entityName: "tutor", refField: "price"}},
                 "student.studentId": {relation: {entityName: "student", refField: "studentId"}},
                 "student.firstName": {relation: {entityName: "student", refField: "firstName"}},
                 "student.lastName": {relation: {entityName: "student", refField: "lastName"}},
@@ -89,6 +89,35 @@ public isolated client class Client {
                 payment: {entity: Payment, fieldName: "payment", refTable: "Payment", refColumns: ["sessionSessionId"], joinColumns: ["sessionId"], 'type: psql:ONE_TO_ONE}
             }
         },
+        [REVIEW]: {
+            entityName: "Review",
+            tableName: "Review",
+            fieldMetadata: {
+                reviewId: {columnName: "reviewId"},
+                review: {columnName: "review"},
+                starRating: {columnName: "starRating"},
+                studentStudentId: {columnName: "studentStudentId"},
+                tutorTutorId: {columnName: "tutorTutorId"},
+                "student.studentId": {relation: {entityName: "student", refField: "studentId"}},
+                "student.firstName": {relation: {entityName: "student", refField: "firstName"}},
+                "student.lastName": {relation: {entityName: "student", refField: "lastName"}},
+                "student.email": {relation: {entityName: "student", refField: "email"}},
+                "student.password": {relation: {entityName: "student", refField: "password"}},
+                "tutor.tutorId": {relation: {entityName: "tutor", refField: "tutorId"}},
+                "tutor.firstName": {relation: {entityName: "tutor", refField: "firstName"}},
+                "tutor.lastName": {relation: {entityName: "tutor", refField: "lastName"}},
+                "tutor.email": {relation: {entityName: "tutor", refField: "email"}},
+                "tutor.password": {relation: {entityName: "tutor", refField: "password"}},
+                "tutor.subjectsSubjectId": {relation: {entityName: "tutor", refField: "subjectsSubjectId"}},
+                "tutor.experienceYears": {relation: {entityName: "tutor", refField: "experienceYears"}},
+                "tutor.price": {relation: {entityName: "tutor", refField: "price"}}
+            },
+            keyFields: ["reviewId"],
+            joinMetadata: {
+                student: {entity: Student, fieldName: "student", refTable: "Student", refColumns: ["studentId"], joinColumns: ["studentStudentId"], 'type: psql:ONE_TO_ONE},
+                tutor: {entity: Tutor, fieldName: "tutor", refTable: "Tutor", refColumns: ["tutorId"], joinColumns: ["tutorTutorId"], 'type: psql:ONE_TO_MANY}
+            }
+        },
         [TUTOR]: {
             entityName: "Tutor",
             tableName: "Tutor",
@@ -100,6 +129,7 @@ public isolated client class Client {
                 password: {columnName: "password"},
                 subjectsSubjectId: {columnName: "subjectsSubjectId"},
                 experienceYears: {columnName: "experienceYears"},
+                price: {columnName: "price"},
                 "students[].id": {relation: {entityName: "students", refField: "id"}},
                 "students[].tutorTutorId": {relation: {entityName: "students", refField: "tutorTutorId"}},
                 "students[].studentStudentId": {relation: {entityName: "students", refField: "studentStudentId"}},
@@ -108,17 +138,22 @@ public isolated client class Client {
                 "sessions[].sessionId": {relation: {entityName: "sessions", refField: "sessionId"}},
                 "sessions[].tutorTutorId": {relation: {entityName: "sessions", refField: "tutorTutorId"}},
                 "sessions[].studentStudentId": {relation: {entityName: "sessions", refField: "studentStudentId"}},
-                "sessions[].date": {relation: {entityName: "sessions", refField: "date"}},
-                "sessions[].startTime": {relation: {entityName: "sessions", refField: "startTime"}},
-                "sessions[].endTime": {relation: {entityName: "sessions", refField: "endTime"}},
+                "sessions[].sessionTime": {relation: {entityName: "sessions", refField: "sessionTime"}},
+                "sessions[].duration": {relation: {entityName: "sessions", refField: "duration"}},
                 "sessions[].status": {relation: {entityName: "sessions", refField: "status"}},
-                "sessions[].isBooked": {relation: {entityName: "sessions", refField: "isBooked"}}
+                "sessions[].isBooked": {relation: {entityName: "sessions", refField: "isBooked"}},
+                "reviews[].reviewId": {relation: {entityName: "reviews", refField: "reviewId"}},
+                "reviews[].review": {relation: {entityName: "reviews", refField: "review"}},
+                "reviews[].starRating": {relation: {entityName: "reviews", refField: "starRating"}},
+                "reviews[].studentStudentId": {relation: {entityName: "reviews", refField: "studentStudentId"}},
+                "reviews[].tutorTutorId": {relation: {entityName: "reviews", refField: "tutorTutorId"}}
             },
             keyFields: ["tutorId"],
             joinMetadata: {
                 students: {entity: TutorNStudent, fieldName: "students", refTable: "TutorNStudent", refColumns: ["tutorTutorId"], joinColumns: ["tutorId"], 'type: psql:MANY_TO_ONE},
                 subjects: {entity: Subject, fieldName: "subjects", refTable: "Subject", refColumns: ["subjectId"], joinColumns: ["subjectsSubjectId"], 'type: psql:ONE_TO_MANY},
-                sessions: {entity: Session, fieldName: "sessions", refTable: "Session", refColumns: ["tutorTutorId"], joinColumns: ["tutorId"], 'type: psql:MANY_TO_ONE}
+                sessions: {entity: Session, fieldName: "sessions", refTable: "Session", refColumns: ["tutorTutorId"], joinColumns: ["tutorId"], 'type: psql:MANY_TO_ONE},
+                reviews: {entity: Review, fieldName: "reviews", refTable: "Review", refColumns: ["tutorTutorId"], joinColumns: ["tutorId"], 'type: psql:MANY_TO_ONE}
             }
         },
         [SUBJECT]: {
@@ -133,7 +168,8 @@ public isolated client class Client {
                 "tutors[].email": {relation: {entityName: "tutors", refField: "email"}},
                 "tutors[].password": {relation: {entityName: "tutors", refField: "password"}},
                 "tutors[].subjectsSubjectId": {relation: {entityName: "tutors", refField: "subjectsSubjectId"}},
-                "tutors[].experienceYears": {relation: {entityName: "tutors", refField: "experienceYears"}}
+                "tutors[].experienceYears": {relation: {entityName: "tutors", refField: "experienceYears"}},
+                "tutors[].price": {relation: {entityName: "tutors", refField: "price"}}
             },
             keyFields: ["subjectId"],
             joinMetadata: {tutors: {entity: Tutor, fieldName: "tutors", refTable: "Tutor", refColumns: ["subjectsSubjectId"], joinColumns: ["subjectId"], 'type: psql:MANY_TO_ONE}}
@@ -218,19 +254,24 @@ public isolated client class Client {
                 "sessions[].sessionId": {relation: {entityName: "sessions", refField: "sessionId"}},
                 "sessions[].tutorTutorId": {relation: {entityName: "sessions", refField: "tutorTutorId"}},
                 "sessions[].studentStudentId": {relation: {entityName: "sessions", refField: "studentStudentId"}},
-                "sessions[].date": {relation: {entityName: "sessions", refField: "date"}},
-                "sessions[].startTime": {relation: {entityName: "sessions", refField: "startTime"}},
-                "sessions[].endTime": {relation: {entityName: "sessions", refField: "endTime"}},
+                "sessions[].sessionTime": {relation: {entityName: "sessions", refField: "sessionTime"}},
+                "sessions[].duration": {relation: {entityName: "sessions", refField: "duration"}},
                 "sessions[].status": {relation: {entityName: "sessions", refField: "status"}},
                 "sessions[].isBooked": {relation: {entityName: "sessions", refField: "isBooked"}},
                 "tutors[].id": {relation: {entityName: "tutors", refField: "id"}},
                 "tutors[].tutorTutorId": {relation: {entityName: "tutors", refField: "tutorTutorId"}},
-                "tutors[].studentStudentId": {relation: {entityName: "tutors", refField: "studentStudentId"}}
+                "tutors[].studentStudentId": {relation: {entityName: "tutors", refField: "studentStudentId"}},
+                "review.reviewId": {relation: {entityName: "review", refField: "reviewId"}},
+                "review.review": {relation: {entityName: "review", refField: "review"}},
+                "review.starRating": {relation: {entityName: "review", refField: "starRating"}},
+                "review.studentStudentId": {relation: {entityName: "review", refField: "studentStudentId"}},
+                "review.tutorTutorId": {relation: {entityName: "review", refField: "tutorTutorId"}}
             },
             keyFields: ["studentId"],
             joinMetadata: {
                 sessions: {entity: Session, fieldName: "sessions", refTable: "Session", refColumns: ["studentStudentId"], joinColumns: ["studentId"], 'type: psql:MANY_TO_ONE},
-                tutors: {entity: TutorNStudent, fieldName: "tutors", refTable: "TutorNStudent", refColumns: ["studentStudentId"], joinColumns: ["studentId"], 'type: psql:MANY_TO_ONE}
+                tutors: {entity: TutorNStudent, fieldName: "tutors", refTable: "TutorNStudent", refColumns: ["studentStudentId"], joinColumns: ["studentId"], 'type: psql:MANY_TO_ONE},
+                review: {entity: Review, fieldName: "review", refTable: "Review", refColumns: ["studentStudentId"], joinColumns: ["studentId"], 'type: psql:ONE_TO_ONE}
             }
         },
         [TUTOR_N_STUDENT]: {
@@ -247,6 +288,7 @@ public isolated client class Client {
                 "tutor.password": {relation: {entityName: "tutor", refField: "password"}},
                 "tutor.subjectsSubjectId": {relation: {entityName: "tutor", refField: "subjectsSubjectId"}},
                 "tutor.experienceYears": {relation: {entityName: "tutor", refField: "experienceYears"}},
+                "tutor.price": {relation: {entityName: "tutor", refField: "price"}},
                 "student.studentId": {relation: {entityName: "student", refField: "studentId"}},
                 "student.firstName": {relation: {entityName: "student", refField: "firstName"}},
                 "student.lastName": {relation: {entityName: "student", refField: "lastName"}},
@@ -270,6 +312,7 @@ public isolated client class Client {
         self.persistClients = {
             [PAYMENT]: check new (dbClient, self.metadata.get(PAYMENT), psql:MYSQL_SPECIFICS),
             [SESSION]: check new (dbClient, self.metadata.get(SESSION), psql:MYSQL_SPECIFICS),
+            [REVIEW]: check new (dbClient, self.metadata.get(REVIEW), psql:MYSQL_SPECIFICS),
             [TUTOR]: check new (dbClient, self.metadata.get(TUTOR), psql:MYSQL_SPECIFICS),
             [SUBJECT]: check new (dbClient, self.metadata.get(SUBJECT), psql:MYSQL_SPECIFICS),
             [OPTION]: check new (dbClient, self.metadata.get(OPTION), psql:MYSQL_SPECIFICS),
@@ -356,6 +399,45 @@ public isolated client class Client {
             sqlClient = self.persistClients.get(SESSION);
         }
         _ = check sqlClient.runDeleteQuery(sessionId);
+        return result;
+    }
+
+    isolated resource function get reviews(ReviewTargetType targetType = <>, sql:ParameterizedQuery whereClause = ``, sql:ParameterizedQuery orderByClause = ``, sql:ParameterizedQuery limitClause = ``, sql:ParameterizedQuery groupByClause = ``) returns stream<targetType, persist:Error?> = @java:Method {
+        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
+        name: "query"
+    } external;
+
+    isolated resource function get reviews/[string reviewId](ReviewTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
+        name: "queryOne"
+    } external;
+
+    isolated resource function post reviews(ReviewInsert[] data) returns string[]|persist:Error {
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(REVIEW);
+        }
+        _ = check sqlClient.runBatchInsertQuery(data);
+        return from ReviewInsert inserted in data
+            select inserted.reviewId;
+    }
+
+    isolated resource function put reviews/[string reviewId](ReviewUpdate value) returns Review|persist:Error {
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(REVIEW);
+        }
+        _ = check sqlClient.runUpdateQuery(reviewId, value);
+        return self->/reviews/[reviewId].get();
+    }
+
+    isolated resource function delete reviews/[string reviewId]() returns Review|persist:Error {
+        Review result = check self->/reviews/[reviewId].get();
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(REVIEW);
+        }
+        _ = check sqlClient.runDeleteQuery(reviewId);
         return result;
     }
 

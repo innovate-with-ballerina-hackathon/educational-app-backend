@@ -12,12 +12,12 @@ DELETE FROM `Student`;
 DELETE FROM `Subject`;
 
 
-INSERT INTO `Subject` (`subjectId`, `name`) VALUES 
-('SUB001', 'Mathematics'),
-('SUB002', 'Physics'),
-('SUB003', 'Chemistry'),
-('SUB004', 'Biology'),
-('SUB005', 'English');
+INSERT INTO `Subject` (`name`) VALUES
+('Mathematics'),
+('Physics'),
+('Biology'),
+('English'),
+('Chemistry');
 
 
 INSERT INTO `Student` (`studentId`, `firstName`, `lastName`, `email`, `password`) VALUES 

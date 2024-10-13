@@ -1,8 +1,10 @@
 import ballerina/persist as _;
 import ballerina/time;
+import ballerinax/persist.sql;
 
 public type Payment record {|
-    readonly string paymentId;
+    @sql:Generated
+    readonly int paymentId;
     int amount;
     PaymentStatus status;
     string paymentMethod;
@@ -16,7 +18,8 @@ public enum PaymentStatus {
 }
 
 public type Session record {|
-    readonly string sessionId;
+    @sql:Generated
+    readonly int sessionId;
     Tutor tutor;
     Student student;
     time:Civil sessionTime;
@@ -36,36 +39,55 @@ public enum SessionStatus {
 
 
 public type Review record {|
-    readonly string reviewId;
+    @sql:Generated
+    readonly int reviewId;
     string review;
     int starRating;
     Student student;
 	Tutor tutor;    
 |};
 
+public type AuthCredentials record {|
+    @sql:Generated
+    readonly int credId;
+    string userRole;
+    @sql:Varchar {length: 255}
+    string accessToken;
+    @sql:Varchar {length: 255}
+    string refreshToken;
+    @sql:Varchar {length: 1024}
+    string idToken;
+	Tutor? tutor;
+	Student? student;
+
+|};
+
 public type Tutor record {|
-    readonly string tutorId;
+    @sql:Generated
+    readonly int tutorId;
     string firstName;
     string lastName;
+    @sql:UniqueIndex {name: "tutor_email"}
     string email;
-    string password;
     TutorNStudent[] students;
-    Subject subjects;
     Session[] sessions;
-    int experienceYears;
-    int price;
     Review[] reviews;
-    
+    AuthCredentials credentials;
+	Subject subject;
+    int? experienceYears;
+    int? price;
 |};
 
 public type Subject record {|
-    readonly string subjectId;
+    @sql:Generated
+    readonly int subjectId;
     string name;
-    Tutor[] tutors;   
+	Tutor[] tutors;   
 |};
 
 public type Option record {|
-    readonly string optionId;
+    @sql:Generated
+    readonly int optionId;
     string text;
     boolean isCorrect;
 	Question question;
@@ -73,14 +95,16 @@ public type Option record {|
 |};
 
 public type Question record {|
-    readonly string questionId;
+    @sql:Generated
+    readonly int questionId;
     string questionText;
     Option[] options;
 	Quiz quiz;
 |};
 
 public type Quiz record {|
-    readonly string quizId;
+    @sql:Generated
+    readonly int quizId;
     Question[] questions;
 	QuizTaken? quiztaken;    
 |};
@@ -94,19 +118,22 @@ public type QuizTaken record {|
 |};
 
 public type Student record{|
-    readonly string studentId;
+    @sql:Generated
+    readonly int studentId;
     string firstName;
     string lastName;
+    @sql:UniqueIndex {name: "student_email"}
     string email;
-    string password;
     Session[] sessions;
     TutorNStudent[] tutors;
 	Review? review;
+    AuthCredentials credentials;
     
 |};
 
 public type TutorNStudent record {| 
-    readonly string id;
+    @sql:Generated
+    readonly int id;
     Tutor tutor;
     Student student;
 |};

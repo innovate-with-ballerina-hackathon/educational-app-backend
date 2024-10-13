@@ -1,61 +1,75 @@
-import ballerina/http;
 import educational_app_backend.datasource;
+
+import ballerina/http;
 import ballerina/persist;
 import ballerina/time;
-service /users on new http:Listener(9091) {
+
+
+
+
+// Request Interceptor service class
+service class RequestInterceptor {
+    *http:RequestInterceptor;
+    resource function 'default [string... path](
+            http:RequestContext ctx,
+            @http:Header {name: "Autherization"} string xApiVersion)
+        returns http:NotImplemented|http:NextService|error? {
+            boolean validated = true;
+            //validate the token
+        if !validated {
+            return http:NOT_IMPLEMENTED;
+        }
+        return ctx.next();
+    }
+}
+
+// Response Interceptor service class
+service class ResponseInterceptor {
+    *http:ResponseInterceptor;
+    remote function interceptResponse(http:RequestContext ctx, http:Response res)
+        returns http:NextService|error? {
+        res.setHeader("x-api-version", "v2");
+        return ctx.next();
+    }
+}
+
+service http:InterceptableService /users on new http:Listener(9091) {
     private final datasource:Client dbClient;
 
-    function init() returns error?{
+    function init() returns error? {
         self.dbClient = check new ();
     }
 
-    //resource to handle the post requests for tutors
-    resource function post tutors(datasource:TutorInsert tutor) returns http:InternalServerError| http:Conflict | http:Created{
-        string[]|persist:Error result = self.dbClient ->/tutors.post([tutor]);
+    public function createInterceptors() returns (RequestInterceptor|ResponseInterceptor)[] {
+        return [new RequestInterceptor(), new ResponseInterceptor()];
+    }
+
+    //resource to handle post requests for sessions
+    resource function post sessions(datasource:SessionInsert session) returns http:InternalServerError|http:Conflict|http:Created {
+        int[]|persist:Error result = self.dbClient->/sessions.post([session]);
         if result is persist:Error {
-            if result is persist:AlreadyExistsError{
+            if result is persist:AlreadyExistsError {
                 return http:CONFLICT;
-            } return http:INTERNAL_SERVER_ERROR;
+            }
+            return http:INTERNAL_SERVER_ERROR;
         }
         return http:CREATED;
     }
 
-    //resource to handle post requests for students
-    resource function post students(datasource:StudentInsert student) returns http:InternalServerError| http:Conflict | http:Created{
-        string[]|persist:Error result = self.dbClient ->/students.post([student]);
-        if result is persist:Error {
-            if result is persist:AlreadyExistsError{
-                return http:CONFLICT;
-            } return http:INTERNAL_SERVER_ERROR;
-        }
-        return http:CREATED;  
-    }
-
-    //resource to handle post requests for sessions
-    resource function post sessions(datasource:SessionInsert session) returns http:InternalServerError| http:Conflict | http:Created{
-        string[]|persist:Error result = self.dbClient ->/sessions.post([session]);
-        if result is persist:Error {
-            if result is persist:AlreadyExistsError{
-                return http:CONFLICT;
-            } return http:INTERNAL_SERVER_ERROR;
-        }
-        return http:CREATED;  
-    }
-
     //resource to handle get sessions for a given tutor at a given date
-    resource function get tutor/[string tutorId]/sessions(int year, int month, int day, int hour) returns datasource:Session[] | error{
-       stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions();
+    resource function get tutor/[int tutorId]/sessions(int year, int month, int day, int hour) returns datasource:Session[]|error {
+        stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions();
         return from datasource:Session session in sessions
             where session.tutorTutorId == tutorId &&
-        session.sessionTime.year == year &&
-        session.sessionTime.month == month &&
-        session.sessionTime.day == day &&
-        session.sessionTime.hour == hour
-            select session; 
+            session.sessionTime.year == year &&
+            session.sessionTime.month == month &&
+            session.sessionTime.day == day &&
+            session.sessionTime.hour == hour
+            select session;
     }
 
     //resource to handle GET requests for students by id
-    resource function get students/[string id]() returns http:InternalServerError & readonly|http:NotFound & readonly|datasource:Student {
+    resource function get students/[int id]() returns http:InternalServerError & readonly|http:NotFound & readonly|datasource:Student {
         datasource:Student|persist:Error result = self.dbClient->/students/[id];
         if result is persist:Error {
             if result is persist:NotFoundError {
@@ -67,7 +81,7 @@ service /users on new http:Listener(9091) {
     }
 
     // Define the resource to handle update session status
-    resource function patch sessions/[string id](@http:Payload datasource:SessionStatus status) returns http:InternalServerError & readonly|http:NotFound & readonly|http:NoContent & readonly {
+    resource function patch sessions/[int id](@http:Payload datasource:SessionStatus status) returns http:InternalServerError & readonly|http:NotFound & readonly|http:NoContent & readonly {
         datasource:Session|persist:Error result = self.dbClient->/sessions/[id].put({status});
         if result is persist:Error {
             if result is persist:NotFoundError {
@@ -78,52 +92,50 @@ service /users on new http:Listener(9091) {
         return http:NO_CONTENT;
     }
 
-
     // Define the resource to reschedule the session by sessionID
-    resource function put sessions/[string sessionId]/reschedule(datasource:SessionUpdate rescheduledSession) returns http:InternalServerError & readonly|http:NoContent & readonly|http:NotFound & readonly|error {
-    
-    time:Civil newSessionTime = <time:Civil>rescheduledSession.sessionTime;
-    int newDuration = <int>rescheduledSession.duration;
+    resource function put sessions/[int sessionId]/reschedule(datasource:SessionUpdate rescheduledSession) returns http:InternalServerError & readonly|http:NoContent & readonly|http:NotFound & readonly|error {
 
-    // Fetch the existing session from the database
-    // datasource:Session|persist:Error existingSession = self.dbClient->/sessions/[sessionId];
+        time:Civil newSessionTime = <time:Civil>rescheduledSession.sessionTime;
+        int newDuration = <int>rescheduledSession.duration;
 
-    // // Ensure the session is booked before allowing rescheduling
-    // time:Utc currentTime = time:utcNow();
+        // Fetch the existing session from the database
+        // datasource:Session|persist:Error existingSession = self.dbClient->/sessions/[sessionId];
 
-    // Calculate the cutoff time (24 hours before the scheduled session time)
-    //time:Seconds cutoffTime = time:utcDiffSeconds(time:utcFromCivil(existingSession.sessionTime), time:utcNow());
+        // // Ensure the session is booked before allowing rescheduling
+        // time:Utc currentTime = time:utcNow();
 
-    // // Check if rescheduling is allowed
-    // if (currentTime >= cutoffTime) {
-    //     // Respond with an error if the session cannot be rescheduled
-    //     return caller->respond({
-    //         message: "Rescheduling is only allowed 24 hours before the session.",
-    //         status: "error"
-    //     });
-    // }
+        // Calculate the cutoff time (24 hours before the scheduled session time)
+        //time:Seconds cutoffTime = time:utcDiffSeconds(time:utcFromCivil(existingSession.sessionTime), time:utcNow());
 
-    datasource:Session|persist:Error result = self.dbClient->/sessions/[sessionId].put({sessionTime : newSessionTime, duration: newDuration});
-    if result is persist:Error {
+        // // Check if rescheduling is allowed
+        // if (currentTime >= cutoffTime) {
+        //     // Respond with an error if the session cannot be rescheduled
+        //     return caller->respond({
+        //         message: "Rescheduling is only allowed 24 hours before the session.",
+        //         status: "error"
+        //     });
+        // }
+
+        datasource:Session|persist:Error result = self.dbClient->/sessions/[sessionId].put({sessionTime: newSessionTime, duration: newDuration});
+        if result is persist:Error {
             if result is persist:NotFoundError {
                 return http:NOT_FOUND;
             }
             return http:INTERNAL_SERVER_ERROR;
         }
         return http:NO_CONTENT;
-}
+    }
 
     //resource to handle DELETE requests for sessions on students requests
-    resource function delete students/[string id]/sessions(int year, int month, int day) returns http:InternalServerError & readonly|http:NoContent & readonly|http:NotFound & readonly {
-        
-        //deleting the calendar event needs to be implemented
+    resource function delete students/[int id]/sessions(int year, int month, int day) returns http:InternalServerError & readonly|http:NoContent & readonly|http:NotFound & readonly {
 
+        //calender event also needs to be deleted
         stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions;
         datasource:Session[]|persist:Error result = from datasource:Session session in sessions
             where session.sessionId == id
-                && session.sessionTime.year == year
-                && session.sessionTime.month == month
-                && session.sessionTime.day == day
+            && session.sessionTime.year == year
+            && session.sessionTime.month == month
+            && session.sessionTime.day == day
             select session;
         if result is persist:Error {
             if result is persist:NotFoundError {
@@ -139,7 +151,5 @@ service /users on new http:Listener(9091) {
         }
         return http:NO_CONTENT;
     }
-
-
 }
 

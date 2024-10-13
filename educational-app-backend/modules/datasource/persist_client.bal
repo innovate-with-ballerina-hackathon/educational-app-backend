@@ -13,6 +13,7 @@ import ballerinax/persist.sql as psql;
 const PAYMENT = "payments";
 const SESSION = "sessions";
 const REVIEW = "reviews";
+const AUTH_CREDENTIALS = "authcredentials";
 const TUTOR = "tutors";
 const SUBJECT = "subjects";
 const OPTION = "options";
@@ -34,7 +35,7 @@ public isolated client class Client {
             entityName: "Payment",
             tableName: "Payment",
             fieldMetadata: {
-                paymentId: {columnName: "paymentId"},
+                paymentId: {columnName: "paymentId", dbGenerated: true},
                 amount: {columnName: "amount"},
                 status: {columnName: "status"},
                 paymentMethod: {columnName: "paymentMethod"},
@@ -55,7 +56,7 @@ public isolated client class Client {
             entityName: "Session",
             tableName: "Session",
             fieldMetadata: {
-                sessionId: {columnName: "sessionId"},
+                sessionId: {columnName: "sessionId", dbGenerated: true},
                 tutorTutorId: {columnName: "tutorTutorId"},
                 studentStudentId: {columnName: "studentStudentId"},
                 sessionTime: {columnName: "sessionTime"},
@@ -66,15 +67,15 @@ public isolated client class Client {
                 "tutor.firstName": {relation: {entityName: "tutor", refField: "firstName"}},
                 "tutor.lastName": {relation: {entityName: "tutor", refField: "lastName"}},
                 "tutor.email": {relation: {entityName: "tutor", refField: "email"}},
-                "tutor.password": {relation: {entityName: "tutor", refField: "password"}},
-                "tutor.subjectsSubjectId": {relation: {entityName: "tutor", refField: "subjectsSubjectId"}},
+                "tutor.credentialsCredId": {relation: {entityName: "tutor", refField: "credentialsCredId"}},
+                "tutor.subjectSubjectId": {relation: {entityName: "tutor", refField: "subjectSubjectId"}},
                 "tutor.experienceYears": {relation: {entityName: "tutor", refField: "experienceYears"}},
                 "tutor.price": {relation: {entityName: "tutor", refField: "price"}},
                 "student.studentId": {relation: {entityName: "student", refField: "studentId"}},
                 "student.firstName": {relation: {entityName: "student", refField: "firstName"}},
                 "student.lastName": {relation: {entityName: "student", refField: "lastName"}},
                 "student.email": {relation: {entityName: "student", refField: "email"}},
-                "student.password": {relation: {entityName: "student", refField: "password"}},
+                "student.credentialsCredId": {relation: {entityName: "student", refField: "credentialsCredId"}},
                 "payment.paymentId": {relation: {entityName: "payment", refField: "paymentId"}},
                 "payment.amount": {relation: {entityName: "payment", refField: "amount"}},
                 "payment.status": {relation: {entityName: "payment", refField: "status"}},
@@ -93,7 +94,7 @@ public isolated client class Client {
             entityName: "Review",
             tableName: "Review",
             fieldMetadata: {
-                reviewId: {columnName: "reviewId"},
+                reviewId: {columnName: "reviewId", dbGenerated: true},
                 review: {columnName: "review"},
                 starRating: {columnName: "starRating"},
                 studentStudentId: {columnName: "studentStudentId"},
@@ -102,13 +103,13 @@ public isolated client class Client {
                 "student.firstName": {relation: {entityName: "student", refField: "firstName"}},
                 "student.lastName": {relation: {entityName: "student", refField: "lastName"}},
                 "student.email": {relation: {entityName: "student", refField: "email"}},
-                "student.password": {relation: {entityName: "student", refField: "password"}},
+                "student.credentialsCredId": {relation: {entityName: "student", refField: "credentialsCredId"}},
                 "tutor.tutorId": {relation: {entityName: "tutor", refField: "tutorId"}},
                 "tutor.firstName": {relation: {entityName: "tutor", refField: "firstName"}},
                 "tutor.lastName": {relation: {entityName: "tutor", refField: "lastName"}},
                 "tutor.email": {relation: {entityName: "tutor", refField: "email"}},
-                "tutor.password": {relation: {entityName: "tutor", refField: "password"}},
-                "tutor.subjectsSubjectId": {relation: {entityName: "tutor", refField: "subjectsSubjectId"}},
+                "tutor.credentialsCredId": {relation: {entityName: "tutor", refField: "credentialsCredId"}},
+                "tutor.subjectSubjectId": {relation: {entityName: "tutor", refField: "subjectSubjectId"}},
                 "tutor.experienceYears": {relation: {entityName: "tutor", refField: "experienceYears"}},
                 "tutor.price": {relation: {entityName: "tutor", refField: "price"}}
             },
@@ -118,23 +119,50 @@ public isolated client class Client {
                 tutor: {entity: Tutor, fieldName: "tutor", refTable: "Tutor", refColumns: ["tutorId"], joinColumns: ["tutorTutorId"], 'type: psql:ONE_TO_MANY}
             }
         },
+        [AUTH_CREDENTIALS]: {
+            entityName: "AuthCredentials",
+            tableName: "AuthCredentials",
+            fieldMetadata: {
+                credId: {columnName: "credId", dbGenerated: true},
+                userRole: {columnName: "userRole"},
+                accessToken: {columnName: "accessToken"},
+                refreshToken: {columnName: "refreshToken"},
+                idToken: {columnName: "idToken"},
+                "tutor.tutorId": {relation: {entityName: "tutor", refField: "tutorId"}},
+                "tutor.firstName": {relation: {entityName: "tutor", refField: "firstName"}},
+                "tutor.lastName": {relation: {entityName: "tutor", refField: "lastName"}},
+                "tutor.email": {relation: {entityName: "tutor", refField: "email"}},
+                "tutor.credentialsCredId": {relation: {entityName: "tutor", refField: "credentialsCredId"}},
+                "tutor.subjectSubjectId": {relation: {entityName: "tutor", refField: "subjectSubjectId"}},
+                "tutor.experienceYears": {relation: {entityName: "tutor", refField: "experienceYears"}},
+                "tutor.price": {relation: {entityName: "tutor", refField: "price"}},
+                "student.studentId": {relation: {entityName: "student", refField: "studentId"}},
+                "student.firstName": {relation: {entityName: "student", refField: "firstName"}},
+                "student.lastName": {relation: {entityName: "student", refField: "lastName"}},
+                "student.email": {relation: {entityName: "student", refField: "email"}},
+                "student.credentialsCredId": {relation: {entityName: "student", refField: "credentialsCredId"}}
+            },
+            keyFields: ["credId"],
+            joinMetadata: {
+                tutor: {entity: Tutor, fieldName: "tutor", refTable: "Tutor", refColumns: ["credentialsCredId"], joinColumns: ["credId"], 'type: psql:ONE_TO_ONE},
+                student: {entity: Student, fieldName: "student", refTable: "Student", refColumns: ["credentialsCredId"], joinColumns: ["credId"], 'type: psql:ONE_TO_ONE}
+            }
+        },
         [TUTOR]: {
             entityName: "Tutor",
             tableName: "Tutor",
             fieldMetadata: {
-                tutorId: {columnName: "tutorId"},
+                tutorId: {columnName: "tutorId", dbGenerated: true},
                 firstName: {columnName: "firstName"},
                 lastName: {columnName: "lastName"},
                 email: {columnName: "email"},
-                password: {columnName: "password"},
-                subjectsSubjectId: {columnName: "subjectsSubjectId"},
+                credentialsCredId: {columnName: "credentialsCredId"},
+                subjectSubjectId: {columnName: "subjectSubjectId"},
                 experienceYears: {columnName: "experienceYears"},
                 price: {columnName: "price"},
                 "students[].id": {relation: {entityName: "students", refField: "id"}},
                 "students[].tutorTutorId": {relation: {entityName: "students", refField: "tutorTutorId"}},
                 "students[].studentStudentId": {relation: {entityName: "students", refField: "studentStudentId"}},
-                "subjects.subjectId": {relation: {entityName: "subjects", refField: "subjectId"}},
-                "subjects.name": {relation: {entityName: "subjects", refField: "name"}},
                 "sessions[].sessionId": {relation: {entityName: "sessions", refField: "sessionId"}},
                 "sessions[].tutorTutorId": {relation: {entityName: "sessions", refField: "tutorTutorId"}},
                 "sessions[].studentStudentId": {relation: {entityName: "sessions", refField: "studentStudentId"}},
@@ -146,39 +174,47 @@ public isolated client class Client {
                 "reviews[].review": {relation: {entityName: "reviews", refField: "review"}},
                 "reviews[].starRating": {relation: {entityName: "reviews", refField: "starRating"}},
                 "reviews[].studentStudentId": {relation: {entityName: "reviews", refField: "studentStudentId"}},
-                "reviews[].tutorTutorId": {relation: {entityName: "reviews", refField: "tutorTutorId"}}
+                "reviews[].tutorTutorId": {relation: {entityName: "reviews", refField: "tutorTutorId"}},
+                "credentials.credId": {relation: {entityName: "credentials", refField: "credId"}},
+                "credentials.userRole": {relation: {entityName: "credentials", refField: "userRole"}},
+                "credentials.accessToken": {relation: {entityName: "credentials", refField: "accessToken"}},
+                "credentials.refreshToken": {relation: {entityName: "credentials", refField: "refreshToken"}},
+                "credentials.idToken": {relation: {entityName: "credentials", refField: "idToken"}},
+                "subject.subjectId": {relation: {entityName: "subject", refField: "subjectId"}},
+                "subject.name": {relation: {entityName: "subject", refField: "name"}}
             },
             keyFields: ["tutorId"],
             joinMetadata: {
                 students: {entity: TutorNStudent, fieldName: "students", refTable: "TutorNStudent", refColumns: ["tutorTutorId"], joinColumns: ["tutorId"], 'type: psql:MANY_TO_ONE},
-                subjects: {entity: Subject, fieldName: "subjects", refTable: "Subject", refColumns: ["subjectId"], joinColumns: ["subjectsSubjectId"], 'type: psql:ONE_TO_MANY},
                 sessions: {entity: Session, fieldName: "sessions", refTable: "Session", refColumns: ["tutorTutorId"], joinColumns: ["tutorId"], 'type: psql:MANY_TO_ONE},
-                reviews: {entity: Review, fieldName: "reviews", refTable: "Review", refColumns: ["tutorTutorId"], joinColumns: ["tutorId"], 'type: psql:MANY_TO_ONE}
+                reviews: {entity: Review, fieldName: "reviews", refTable: "Review", refColumns: ["tutorTutorId"], joinColumns: ["tutorId"], 'type: psql:MANY_TO_ONE},
+                credentials: {entity: AuthCredentials, fieldName: "credentials", refTable: "AuthCredentials", refColumns: ["credId"], joinColumns: ["credentialsCredId"], 'type: psql:ONE_TO_ONE},
+                subject: {entity: Subject, fieldName: "subject", refTable: "Subject", refColumns: ["subjectId"], joinColumns: ["subjectSubjectId"], 'type: psql:ONE_TO_MANY}
             }
         },
         [SUBJECT]: {
             entityName: "Subject",
             tableName: "Subject",
             fieldMetadata: {
-                subjectId: {columnName: "subjectId"},
+                subjectId: {columnName: "subjectId", dbGenerated: true},
                 name: {columnName: "name"},
                 "tutors[].tutorId": {relation: {entityName: "tutors", refField: "tutorId"}},
                 "tutors[].firstName": {relation: {entityName: "tutors", refField: "firstName"}},
                 "tutors[].lastName": {relation: {entityName: "tutors", refField: "lastName"}},
                 "tutors[].email": {relation: {entityName: "tutors", refField: "email"}},
-                "tutors[].password": {relation: {entityName: "tutors", refField: "password"}},
-                "tutors[].subjectsSubjectId": {relation: {entityName: "tutors", refField: "subjectsSubjectId"}},
+                "tutors[].credentialsCredId": {relation: {entityName: "tutors", refField: "credentialsCredId"}},
+                "tutors[].subjectSubjectId": {relation: {entityName: "tutors", refField: "subjectSubjectId"}},
                 "tutors[].experienceYears": {relation: {entityName: "tutors", refField: "experienceYears"}},
                 "tutors[].price": {relation: {entityName: "tutors", refField: "price"}}
             },
             keyFields: ["subjectId"],
-            joinMetadata: {tutors: {entity: Tutor, fieldName: "tutors", refTable: "Tutor", refColumns: ["subjectsSubjectId"], joinColumns: ["subjectId"], 'type: psql:MANY_TO_ONE}}
+            joinMetadata: {tutors: {entity: Tutor, fieldName: "tutors", refTable: "Tutor", refColumns: ["subjectSubjectId"], joinColumns: ["subjectId"], 'type: psql:MANY_TO_ONE}}
         },
         [OPTION]: {
             entityName: "Option",
             tableName: "Option",
             fieldMetadata: {
-                optionId: {columnName: "optionId"},
+                optionId: {columnName: "optionId", dbGenerated: true},
                 text: {columnName: "text"},
                 isCorrect: {columnName: "isCorrect"},
                 questionQuestionId: {columnName: "questionQuestionId"},
@@ -193,7 +229,7 @@ public isolated client class Client {
             entityName: "Question",
             tableName: "Question",
             fieldMetadata: {
-                questionId: {columnName: "questionId"},
+                questionId: {columnName: "questionId", dbGenerated: true},
                 questionText: {columnName: "questionText"},
                 quizQuizId: {columnName: "quizQuizId"},
                 "options[].optionId": {relation: {entityName: "options", refField: "optionId"}},
@@ -212,7 +248,7 @@ public isolated client class Client {
             entityName: "Quiz",
             tableName: "Quiz",
             fieldMetadata: {
-                quizId: {columnName: "quizId"},
+                quizId: {columnName: "quizId", dbGenerated: true},
                 "questions[].questionId": {relation: {entityName: "questions", refField: "questionId"}},
                 "questions[].questionText": {relation: {entityName: "questions", refField: "questionText"}},
                 "questions[].quizQuizId": {relation: {entityName: "questions", refField: "quizQuizId"}},
@@ -246,11 +282,11 @@ public isolated client class Client {
             entityName: "Student",
             tableName: "Student",
             fieldMetadata: {
-                studentId: {columnName: "studentId"},
+                studentId: {columnName: "studentId", dbGenerated: true},
                 firstName: {columnName: "firstName"},
                 lastName: {columnName: "lastName"},
                 email: {columnName: "email"},
-                password: {columnName: "password"},
+                credentialsCredId: {columnName: "credentialsCredId"},
                 "sessions[].sessionId": {relation: {entityName: "sessions", refField: "sessionId"}},
                 "sessions[].tutorTutorId": {relation: {entityName: "sessions", refField: "tutorTutorId"}},
                 "sessions[].studentStudentId": {relation: {entityName: "sessions", refField: "studentStudentId"}},
@@ -265,35 +301,41 @@ public isolated client class Client {
                 "review.review": {relation: {entityName: "review", refField: "review"}},
                 "review.starRating": {relation: {entityName: "review", refField: "starRating"}},
                 "review.studentStudentId": {relation: {entityName: "review", refField: "studentStudentId"}},
-                "review.tutorTutorId": {relation: {entityName: "review", refField: "tutorTutorId"}}
+                "review.tutorTutorId": {relation: {entityName: "review", refField: "tutorTutorId"}},
+                "credentials.credId": {relation: {entityName: "credentials", refField: "credId"}},
+                "credentials.userRole": {relation: {entityName: "credentials", refField: "userRole"}},
+                "credentials.accessToken": {relation: {entityName: "credentials", refField: "accessToken"}},
+                "credentials.refreshToken": {relation: {entityName: "credentials", refField: "refreshToken"}},
+                "credentials.idToken": {relation: {entityName: "credentials", refField: "idToken"}}
             },
             keyFields: ["studentId"],
             joinMetadata: {
                 sessions: {entity: Session, fieldName: "sessions", refTable: "Session", refColumns: ["studentStudentId"], joinColumns: ["studentId"], 'type: psql:MANY_TO_ONE},
                 tutors: {entity: TutorNStudent, fieldName: "tutors", refTable: "TutorNStudent", refColumns: ["studentStudentId"], joinColumns: ["studentId"], 'type: psql:MANY_TO_ONE},
-                review: {entity: Review, fieldName: "review", refTable: "Review", refColumns: ["studentStudentId"], joinColumns: ["studentId"], 'type: psql:ONE_TO_ONE}
+                review: {entity: Review, fieldName: "review", refTable: "Review", refColumns: ["studentStudentId"], joinColumns: ["studentId"], 'type: psql:ONE_TO_ONE},
+                credentials: {entity: AuthCredentials, fieldName: "credentials", refTable: "AuthCredentials", refColumns: ["credId"], joinColumns: ["credentialsCredId"], 'type: psql:ONE_TO_ONE}
             }
         },
         [TUTOR_N_STUDENT]: {
             entityName: "TutorNStudent",
             tableName: "TutorNStudent",
             fieldMetadata: {
-                id: {columnName: "id"},
+                id: {columnName: "id", dbGenerated: true},
                 tutorTutorId: {columnName: "tutorTutorId"},
                 studentStudentId: {columnName: "studentStudentId"},
                 "tutor.tutorId": {relation: {entityName: "tutor", refField: "tutorId"}},
                 "tutor.firstName": {relation: {entityName: "tutor", refField: "firstName"}},
                 "tutor.lastName": {relation: {entityName: "tutor", refField: "lastName"}},
                 "tutor.email": {relation: {entityName: "tutor", refField: "email"}},
-                "tutor.password": {relation: {entityName: "tutor", refField: "password"}},
-                "tutor.subjectsSubjectId": {relation: {entityName: "tutor", refField: "subjectsSubjectId"}},
+                "tutor.credentialsCredId": {relation: {entityName: "tutor", refField: "credentialsCredId"}},
+                "tutor.subjectSubjectId": {relation: {entityName: "tutor", refField: "subjectSubjectId"}},
                 "tutor.experienceYears": {relation: {entityName: "tutor", refField: "experienceYears"}},
                 "tutor.price": {relation: {entityName: "tutor", refField: "price"}},
                 "student.studentId": {relation: {entityName: "student", refField: "studentId"}},
                 "student.firstName": {relation: {entityName: "student", refField: "firstName"}},
                 "student.lastName": {relation: {entityName: "student", refField: "lastName"}},
                 "student.email": {relation: {entityName: "student", refField: "email"}},
-                "student.password": {relation: {entityName: "student", refField: "password"}}
+                "student.credentialsCredId": {relation: {entityName: "student", refField: "credentialsCredId"}}
             },
             keyFields: ["id"],
             joinMetadata: {
@@ -313,6 +355,7 @@ public isolated client class Client {
             [PAYMENT]: check new (dbClient, self.metadata.get(PAYMENT), psql:MYSQL_SPECIFICS),
             [SESSION]: check new (dbClient, self.metadata.get(SESSION), psql:MYSQL_SPECIFICS),
             [REVIEW]: check new (dbClient, self.metadata.get(REVIEW), psql:MYSQL_SPECIFICS),
+            [AUTH_CREDENTIALS]: check new (dbClient, self.metadata.get(AUTH_CREDENTIALS), psql:MYSQL_SPECIFICS),
             [TUTOR]: check new (dbClient, self.metadata.get(TUTOR), psql:MYSQL_SPECIFICS),
             [SUBJECT]: check new (dbClient, self.metadata.get(SUBJECT), psql:MYSQL_SPECIFICS),
             [OPTION]: check new (dbClient, self.metadata.get(OPTION), psql:MYSQL_SPECIFICS),
@@ -329,22 +372,23 @@ public isolated client class Client {
         name: "query"
     } external;
 
-    isolated resource function get payments/[string paymentId](PaymentTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+    isolated resource function get payments/[int paymentId](PaymentTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
         'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
         name: "queryOne"
     } external;
 
-    isolated resource function post payments(PaymentInsert[] data) returns string[]|persist:Error {
+    isolated resource function post payments(PaymentInsert[] data) returns int[]|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(PAYMENT);
         }
-        _ = check sqlClient.runBatchInsertQuery(data);
-        return from PaymentInsert inserted in data
-            select inserted.paymentId;
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
     }
 
-    isolated resource function put payments/[string paymentId](PaymentUpdate value) returns Payment|persist:Error {
+    isolated resource function put payments/[int paymentId](PaymentUpdate value) returns Payment|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(PAYMENT);
@@ -353,7 +397,7 @@ public isolated client class Client {
         return self->/payments/[paymentId].get();
     }
 
-    isolated resource function delete payments/[string paymentId]() returns Payment|persist:Error {
+    isolated resource function delete payments/[int paymentId]() returns Payment|persist:Error {
         Payment result = check self->/payments/[paymentId].get();
         psql:SQLClient sqlClient;
         lock {
@@ -368,22 +412,23 @@ public isolated client class Client {
         name: "query"
     } external;
 
-    isolated resource function get sessions/[string sessionId](SessionTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+    isolated resource function get sessions/[int sessionId](SessionTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
         'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
         name: "queryOne"
     } external;
 
-    isolated resource function post sessions(SessionInsert[] data) returns string[]|persist:Error {
+    isolated resource function post sessions(SessionInsert[] data) returns int[]|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(SESSION);
         }
-        _ = check sqlClient.runBatchInsertQuery(data);
-        return from SessionInsert inserted in data
-            select inserted.sessionId;
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
     }
 
-    isolated resource function put sessions/[string sessionId](SessionUpdate value) returns Session|persist:Error {
+    isolated resource function put sessions/[int sessionId](SessionUpdate value) returns Session|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(SESSION);
@@ -392,7 +437,7 @@ public isolated client class Client {
         return self->/sessions/[sessionId].get();
     }
 
-    isolated resource function delete sessions/[string sessionId]() returns Session|persist:Error {
+    isolated resource function delete sessions/[int sessionId]() returns Session|persist:Error {
         Session result = check self->/sessions/[sessionId].get();
         psql:SQLClient sqlClient;
         lock {
@@ -407,22 +452,23 @@ public isolated client class Client {
         name: "query"
     } external;
 
-    isolated resource function get reviews/[string reviewId](ReviewTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+    isolated resource function get reviews/[int reviewId](ReviewTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
         'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
         name: "queryOne"
     } external;
 
-    isolated resource function post reviews(ReviewInsert[] data) returns string[]|persist:Error {
+    isolated resource function post reviews(ReviewInsert[] data) returns int[]|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(REVIEW);
         }
-        _ = check sqlClient.runBatchInsertQuery(data);
-        return from ReviewInsert inserted in data
-            select inserted.reviewId;
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
     }
 
-    isolated resource function put reviews/[string reviewId](ReviewUpdate value) returns Review|persist:Error {
+    isolated resource function put reviews/[int reviewId](ReviewUpdate value) returns Review|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(REVIEW);
@@ -431,7 +477,7 @@ public isolated client class Client {
         return self->/reviews/[reviewId].get();
     }
 
-    isolated resource function delete reviews/[string reviewId]() returns Review|persist:Error {
+    isolated resource function delete reviews/[int reviewId]() returns Review|persist:Error {
         Review result = check self->/reviews/[reviewId].get();
         psql:SQLClient sqlClient;
         lock {
@@ -441,27 +487,68 @@ public isolated client class Client {
         return result;
     }
 
+    isolated resource function get authcredentials(AuthCredentialsTargetType targetType = <>, sql:ParameterizedQuery whereClause = ``, sql:ParameterizedQuery orderByClause = ``, sql:ParameterizedQuery limitClause = ``, sql:ParameterizedQuery groupByClause = ``) returns stream<targetType, persist:Error?> = @java:Method {
+        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
+        name: "query"
+    } external;
+
+    isolated resource function get authcredentials/[int credId](AuthCredentialsTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
+        name: "queryOne"
+    } external;
+
+    isolated resource function post authcredentials(AuthCredentialsInsert[] data) returns int[]|persist:Error {
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(AUTH_CREDENTIALS);
+        }
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
+    }
+
+    isolated resource function put authcredentials/[int credId](AuthCredentialsUpdate value) returns AuthCredentials|persist:Error {
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(AUTH_CREDENTIALS);
+        }
+        _ = check sqlClient.runUpdateQuery(credId, value);
+        return self->/authcredentials/[credId].get();
+    }
+
+    isolated resource function delete authcredentials/[int credId]() returns AuthCredentials|persist:Error {
+        AuthCredentials result = check self->/authcredentials/[credId].get();
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(AUTH_CREDENTIALS);
+        }
+        _ = check sqlClient.runDeleteQuery(credId);
+        return result;
+    }
+
     isolated resource function get tutors(TutorTargetType targetType = <>, sql:ParameterizedQuery whereClause = ``, sql:ParameterizedQuery orderByClause = ``, sql:ParameterizedQuery limitClause = ``, sql:ParameterizedQuery groupByClause = ``) returns stream<targetType, persist:Error?> = @java:Method {
         'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
         name: "query"
     } external;
 
-    isolated resource function get tutors/[string tutorId](TutorTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+    isolated resource function get tutors/[int tutorId](TutorTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
         'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
         name: "queryOne"
     } external;
 
-    isolated resource function post tutors(TutorInsert[] data) returns string[]|persist:Error {
+    isolated resource function post tutors(TutorInsert[] data) returns int[]|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(TUTOR);
         }
-        _ = check sqlClient.runBatchInsertQuery(data);
-        return from TutorInsert inserted in data
-            select inserted.tutorId;
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
     }
 
-    isolated resource function put tutors/[string tutorId](TutorUpdate value) returns Tutor|persist:Error {
+    isolated resource function put tutors/[int tutorId](TutorUpdate value) returns Tutor|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(TUTOR);
@@ -470,7 +557,7 @@ public isolated client class Client {
         return self->/tutors/[tutorId].get();
     }
 
-    isolated resource function delete tutors/[string tutorId]() returns Tutor|persist:Error {
+    isolated resource function delete tutors/[int tutorId]() returns Tutor|persist:Error {
         Tutor result = check self->/tutors/[tutorId].get();
         psql:SQLClient sqlClient;
         lock {
@@ -485,22 +572,23 @@ public isolated client class Client {
         name: "query"
     } external;
 
-    isolated resource function get subjects/[string subjectId](SubjectTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+    isolated resource function get subjects/[int subjectId](SubjectTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
         'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
         name: "queryOne"
     } external;
 
-    isolated resource function post subjects(SubjectInsert[] data) returns string[]|persist:Error {
+    isolated resource function post subjects(SubjectInsert[] data) returns int[]|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(SUBJECT);
         }
-        _ = check sqlClient.runBatchInsertQuery(data);
-        return from SubjectInsert inserted in data
-            select inserted.subjectId;
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
     }
 
-    isolated resource function put subjects/[string subjectId](SubjectUpdate value) returns Subject|persist:Error {
+    isolated resource function put subjects/[int subjectId](SubjectUpdate value) returns Subject|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(SUBJECT);
@@ -509,7 +597,7 @@ public isolated client class Client {
         return self->/subjects/[subjectId].get();
     }
 
-    isolated resource function delete subjects/[string subjectId]() returns Subject|persist:Error {
+    isolated resource function delete subjects/[int subjectId]() returns Subject|persist:Error {
         Subject result = check self->/subjects/[subjectId].get();
         psql:SQLClient sqlClient;
         lock {
@@ -524,22 +612,23 @@ public isolated client class Client {
         name: "query"
     } external;
 
-    isolated resource function get options/[string optionId](OptionTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+    isolated resource function get options/[int optionId](OptionTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
         'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
         name: "queryOne"
     } external;
 
-    isolated resource function post options(OptionInsert[] data) returns string[]|persist:Error {
+    isolated resource function post options(OptionInsert[] data) returns int[]|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(OPTION);
         }
-        _ = check sqlClient.runBatchInsertQuery(data);
-        return from OptionInsert inserted in data
-            select inserted.optionId;
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
     }
 
-    isolated resource function put options/[string optionId](OptionUpdate value) returns Option|persist:Error {
+    isolated resource function put options/[int optionId](OptionUpdate value) returns Option|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(OPTION);
@@ -548,7 +637,7 @@ public isolated client class Client {
         return self->/options/[optionId].get();
     }
 
-    isolated resource function delete options/[string optionId]() returns Option|persist:Error {
+    isolated resource function delete options/[int optionId]() returns Option|persist:Error {
         Option result = check self->/options/[optionId].get();
         psql:SQLClient sqlClient;
         lock {
@@ -563,22 +652,23 @@ public isolated client class Client {
         name: "query"
     } external;
 
-    isolated resource function get questions/[string questionId](QuestionTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+    isolated resource function get questions/[int questionId](QuestionTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
         'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
         name: "queryOne"
     } external;
 
-    isolated resource function post questions(QuestionInsert[] data) returns string[]|persist:Error {
+    isolated resource function post questions(QuestionInsert[] data) returns int[]|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(QUESTION);
         }
-        _ = check sqlClient.runBatchInsertQuery(data);
-        return from QuestionInsert inserted in data
-            select inserted.questionId;
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
     }
 
-    isolated resource function put questions/[string questionId](QuestionUpdate value) returns Question|persist:Error {
+    isolated resource function put questions/[int questionId](QuestionUpdate value) returns Question|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(QUESTION);
@@ -587,7 +677,7 @@ public isolated client class Client {
         return self->/questions/[questionId].get();
     }
 
-    isolated resource function delete questions/[string questionId]() returns Question|persist:Error {
+    isolated resource function delete questions/[int questionId]() returns Question|persist:Error {
         Question result = check self->/questions/[questionId].get();
         psql:SQLClient sqlClient;
         lock {
@@ -602,22 +692,23 @@ public isolated client class Client {
         name: "query"
     } external;
 
-    isolated resource function get quizzes/[string quizId](QuizTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+    isolated resource function get quizzes/[int quizId](QuizTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
         'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
         name: "queryOne"
     } external;
 
-    isolated resource function post quizzes(QuizInsert[] data) returns string[]|persist:Error {
+    isolated resource function post quizzes(QuizInsert[] data) returns int[]|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(QUIZ);
         }
-        _ = check sqlClient.runBatchInsertQuery(data);
-        return from QuizInsert inserted in data
-            select inserted.quizId;
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
     }
 
-    isolated resource function put quizzes/[string quizId](QuizUpdate value) returns Quiz|persist:Error {
+    isolated resource function put quizzes/[int quizId](QuizUpdate value) returns Quiz|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(QUIZ);
@@ -626,7 +717,7 @@ public isolated client class Client {
         return self->/quizzes/[quizId].get();
     }
 
-    isolated resource function delete quizzes/[string quizId]() returns Quiz|persist:Error {
+    isolated resource function delete quizzes/[int quizId]() returns Quiz|persist:Error {
         Quiz result = check self->/quizzes/[quizId].get();
         psql:SQLClient sqlClient;
         lock {
@@ -680,22 +771,23 @@ public isolated client class Client {
         name: "query"
     } external;
 
-    isolated resource function get students/[string studentId](StudentTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+    isolated resource function get students/[int studentId](StudentTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
         'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
         name: "queryOne"
     } external;
 
-    isolated resource function post students(StudentInsert[] data) returns string[]|persist:Error {
+    isolated resource function post students(StudentInsert[] data) returns int[]|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(STUDENT);
         }
-        _ = check sqlClient.runBatchInsertQuery(data);
-        return from StudentInsert inserted in data
-            select inserted.studentId;
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
     }
 
-    isolated resource function put students/[string studentId](StudentUpdate value) returns Student|persist:Error {
+    isolated resource function put students/[int studentId](StudentUpdate value) returns Student|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(STUDENT);
@@ -704,7 +796,7 @@ public isolated client class Client {
         return self->/students/[studentId].get();
     }
 
-    isolated resource function delete students/[string studentId]() returns Student|persist:Error {
+    isolated resource function delete students/[int studentId]() returns Student|persist:Error {
         Student result = check self->/students/[studentId].get();
         psql:SQLClient sqlClient;
         lock {
@@ -719,22 +811,23 @@ public isolated client class Client {
         name: "query"
     } external;
 
-    isolated resource function get tutornstudents/[string id](TutorNStudentTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+    isolated resource function get tutornstudents/[int id](TutorNStudentTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
         'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
         name: "queryOne"
     } external;
 
-    isolated resource function post tutornstudents(TutorNStudentInsert[] data) returns string[]|persist:Error {
+    isolated resource function post tutornstudents(TutorNStudentInsert[] data) returns int[]|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(TUTOR_N_STUDENT);
         }
-        _ = check sqlClient.runBatchInsertQuery(data);
-        return from TutorNStudentInsert inserted in data
-            select inserted.id;
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
     }
 
-    isolated resource function put tutornstudents/[string id](TutorNStudentUpdate value) returns TutorNStudent|persist:Error {
+    isolated resource function put tutornstudents/[int id](TutorNStudentUpdate value) returns TutorNStudent|persist:Error {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(TUTOR_N_STUDENT);
@@ -743,7 +836,7 @@ public isolated client class Client {
         return self->/tutornstudents/[id].get();
     }
 
-    isolated resource function delete tutornstudents/[string id]() returns TutorNStudent|persist:Error {
+    isolated resource function delete tutornstudents/[int id]() returns TutorNStudent|persist:Error {
         TutorNStudent result = check self->/tutornstudents/[id].get();
         psql:SQLClient sqlClient;
         lock {

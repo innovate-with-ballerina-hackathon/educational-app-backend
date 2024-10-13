@@ -69,3 +69,12 @@ Content-Type: application/json
     },
     "duration": 30
 }
+
+
+POST http://localhost:9093/users/login
+Content-Type: application/json"
+
+{
+  "username": "bob.williams@example.com",
+  "password": "password321"
+}

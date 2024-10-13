@@ -27,7 +27,7 @@ CREATE TABLE `AuthCredentials` (
 	`userRole` VARCHAR(191) NOT NULL,
 	`accessToken` VARCHAR(255) NOT NULL,
 	`refreshToken` VARCHAR(255) NOT NULL,
-	`idToken` VARCHAR(1024) NOT NULL,
+	`idToken` TEXT NOT NULL,
 	PRIMARY KEY(`credId`)
 );
 

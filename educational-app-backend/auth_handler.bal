@@ -3,11 +3,25 @@ import educational_app_backend.datasource;
 import ballerina/http;
 import ballerina/io;
 import ballerina/persist;
+import ballerinax/googleapis.gmail;
 
-configurable string GOOGLE_CLIENT_ID = ?;
-configurable string GOOGLE_CLIENT_SECRET = ?;
+configurable string clientId = ?;
+configurable string clientSecret = ?;
+configurable string refreshToken = ?;
+
+string companyName = "Edu-App";
 
 http:Client googleClient = check new ("https://oauth2.googleapis.com");
+
+gmail:Client gmail = check new gmail:Client(
+    config = {
+        auth: {
+            refreshToken,
+            clientId,
+            clientSecret
+        }
+    }
+);
 
 service / on new http:Listener(9093) {
     private final datasource:Client dbClient;
@@ -46,11 +60,11 @@ service / on new http:Listener(9093) {
             select sub.subjectId;
 
         int subjectId = subId[0];
-           
+
         // Prepare the request body for the token endpoint
         http:RequestMessage requestBody = {
-            "client_id": GOOGLE_CLIENT_ID,
-            "client_secret": GOOGLE_CLIENT_SECRET,
+            "client_id": clientId,
+            "client_secret": clientSecret,
             "code": authorizationCode,
             "grant_type": "authorization_code",
             "redirect_uri": redirectUri
@@ -61,15 +75,17 @@ service / on new http:Listener(9093) {
         };
 
         // FIXME:
-        json|error dummyResponse = check googleClient->/token.post(requestBody, headers);
-        io:print(dummyResponse);
-        // json dummyResponse = {
-        //     "access_token": "ya29.a0AcM612wfX9dyjnGM6ec6IMPHmoqBpfOi-QFdym_80U-06XqRh1-4n5X1PGvPGdwDhwkXLcI43MeO30IZZqY_eMgNxiK4aEx0m5XnA8TYq-spFyHb3sg-TBzy2VwKT-4WVgIBjTbKwALkpd1wqTpwo_ddz_fr7vZZUa3E6u5KaCgYKAQISARMSFQHGX2Miseqx02hwxftI2_VM0N6Zhw0175",
-        //     "expires_in": 3599,
-        //     "refresh_token": "1//0gqwqy9uagj5gCgYIARAAGBASNwF-L9IrWLXoNy87XnVeutRfPvK9NeUZYobZZbzdO8jQjgXj80VfSHFT8CatuPYh-kXlfPx8qtA",
-        //     "scope": "https://www.googleapis.com/auth/drive.metadata.readonly",
-        //     "token_type": "Bearer"
-        // };
+        //json|error dummyResponse = check googleClient->/token.post(requestBody, headers);
+        //io:print(dummyResponse);
+        json dummyResponse =
+        {
+            "access_token": "ya29.a0AcM612yWg6O6aa1Iq4dDpqtZMdw9RfJ33C3mVRg7RaUL7jHtzKnh8PvQsg926Pr9pdi664aYbNUu7K9qPoSg6ipDgXEvX4EbKaxYvbOGEtrRS1yai6C3F19ORJgF_vDTkP23E6A-bU_SY-5PJDl-oPuRfIC9UpycjGaKLnH7aCgYKAWoSARISFQHGX2MiU9pRVBgLCwbllAOl7u4dPQ0175",
+            "expires_in": 3599,
+            "scope": "https://www.googleapis.com/auth/gmail.addons.current.message.action https://www.googleapis.com/auth/gmail.settings.basic https://www.googleapis.com/auth/gmail.addons.current.action.compose https://www.googleapis.com/auth/gmail.settings.sharing https://www.googleapis.com/auth/userinfo.email https://mail.google.com/ https://www.googleapis.com/auth/gmail.insert https://www.googleapis.com/auth/gmail.labels https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/gmail.addons.current.message.metadata https://www.googleapis.com/auth/gmail.addons.current.message.readonly openid",
+            "token_type": "Bearer",
+            "refresh_token": "1//041YTZLinpExoCgYIARAAGAQSNwF-L9Ir_k5WKInZY6Rj8J_op5j8EnSYj-p0PwFtssnnYmJ_An9r_0iL8gEMFIHtvnVNssI1L4A",
+            "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImE1MGY2ZTcwZWY0YjU0OGE1ZmQ5MTQyZWVjZDFmYjhmNTRkY2U5ZWUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIyMjI4OTU5NTg3MzYtOGsxcG5jN2pxOXFxajdkMzZoMnRhNnJvdjI0ZTE1Y3AuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIyMjI4OTU5NTg3MzYtOGsxcG5jN2pxOXFxajdkMzZoMnRhNnJvdjI0ZTE1Y3AuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDQxNTM5MjU1MDYyMTY0NTcwOTYiLCJlbWFpbCI6ImhpbWFuc2hpcG9kaW5pLjIwMDBAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF0X2hhc2giOiJuMDJVVHV4M2dSS3RRSXl2S3RXSl9nIiwibmFtZSI6IkhpbWFuc2hpIERlIFNpbHZhIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0oycWJPRU5HaU9QX2ZKRGkzMFBRSzgwWmhCNXYtSHlSR0QxZWNMTVZTb3V5Q0lDT2EyPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6IkhpbWFuc2hpIiwiZmFtaWx5X25hbWUiOiJEZSBTaWx2YSIsImlhdCI6MTcyODg0NDk5NiwiZXhwIjoxNzI4ODQ4NTk2fQ.YIrrR8rT2-n7_v026arl_7p0uU22kvhsnD314bIQ1I6kFFG3ug7dbsXOvzmm5Y_lBehfHBc25RvwIy0C3VBTycE8FXdox857T594A6eJPCmNPQc0uEBdSpxbVZktFapPPrQkJ21iBktEfC7nDKpTff77Gb5n435fN8NbaHUvNyWYr6ew3D8P2_1PfnsglHXUDkj-a2O_sMC_poiJVwdS3sHexXBN8wAVP0NffSQm1m--8oVwKslzHhoiHXzkyR3vSncTz9zoo_9DkL-P3LhvG6AUxNkGB2FLQ_KLi9wn3ixkx7tw2z1cT55dgmkv1VtE3ZOHVw2gomwX9gJBHorL7g"
+        };
 
         if (dummyResponse is json) {
             string accessToken = check dummyResponse.access_token;
@@ -85,7 +101,7 @@ service / on new http:Listener(9093) {
 
             if userRole == "student" {
                 datasource:AuthCredentialsInsert credentials = {
-                    "userRole" : userRole,
+                    "userRole": userRole,
                     "accessToken": accessToken,
                     "refreshToken": refreshToken,
                     "idToken": "idToken"
@@ -97,16 +113,54 @@ service / on new http:Listener(9093) {
                     "firstName": firstName,
                     "lastName": lastName,
                     "email": email,
-                    "credentialsCredId" : credentialId
+                    "credentialsCredId": credentialId
                 };
-                _ = check self.dbClient->/students.post([student]);
+                int[]|persist:Error result = self.dbClient->/students.post([student]);
+                if result is persist:Error {
+                    if result is persist:AlreadyExistsError {
+                        response.setHeader("message", http:CONFLICT.toString() + "User Already Exists");
+                    }
+                    response.setHeader("message", http:INTERNAL_SERVER_ERROR.toString() + "Internal Server Error Occured");
+                } else {
+                    response.setHeader("message", http:OK.toString() + "User Created Successfully");
+
+                    string htmlContent = string `<html>
+    <head>
+        <title>Welcome to Edu-App</title>
+    </head>
+    <body>
+        <img src="cid:eduLogo" alt="Company Logo">
+        <p>Dear ${firstName},</p>
+        <p>Welcome to Edu-App! We're excited to have you onboard. Start exploring and connecting with expert tutors to reach your learning goals today!</p>
+        <p>Best Regards,</p>
+        <p>${companyName}</p>
+    </body>
+    </html>`;
+
+                    gmail:MessageRequest message = {
+                        to: [email],
+                        subject: "Welcome to Edu-App! Start Your Learning Journey Today",
+                        bodyInHtml: htmlContent,
+                        inlineImages: [
+                            {
+                                contentId: "eduLogo",
+                                mimeType: "image/jpg",
+                                name: "eduAppLogo.jpg",
+                                path: "resources/edu-app-logo.jpg"
+                            }
+                        ]
+                    };
+
+                    gmail:Message sendResult = check gmail->/users/[email]/messages/send.post(message);
+                    io:println("Email sent. Message ID: " + sendResult.id);
+                }
 
             } else {
                 datasource:AuthCredentialsInsert credentials = {
-                    "userRole" : userRole,
+                    "userRole": userRole,
                     "accessToken": accessToken,
                     "refreshToken": refreshToken,
-                    "idToken": "idToken"
+                    "idToken": idToken
                 };
                 int[] credId = check self.dbClient->/authcredentials.post([credentials]);
                 int credentialId = credId[0];
@@ -117,17 +171,54 @@ service / on new http:Listener(9093) {
                     "email": email,
                     "experienceYears": 0,
                     "price": 0,
-                    "credentialsCredId" : credentialId,
+                    "credentialsCredId": credentialId,
                     "subjectSubjectId": subjectId
                 };
-                _ = check self.dbClient->/tutors.post([tutor]);
+                int[]|persist:Error result = self.dbClient->/tutors.post([tutor]);
+                if result is persist:Error {
+                    if result is persist:AlreadyExistsError {
+                        response.setHeader("message", http:CONFLICT.toString() + "User Already Exists");
+                    }
+                    response.setHeader("message", http:INTERNAL_SERVER_ERROR.toString() + "Internal Server Error Occured");
+                } else {
+                    response.setHeader("message", http:OK.toString() + "User Created Successfully");
+
+                    string htmlContent = string `<html>
+    <head>
+        <title>Welcome to Edu-App</title>
+    </head>
+    <body>
+        <img src="cid:eduLogo" alt="Company Logo">
+        <p>Dear ${firstName},</p>
+        <p>Welcome to Edu-App! We're thrilled to have you join our community of educators. Get ready to share your expertise and help students succeed!</p>
+        <p>Best Regards,</p>
+        <p>${companyName}</p>
+    </body>
+    </html>`;
+
+                    gmail:MessageRequest message = {
+                        to: [email],
+                        subject: "Welcome to Edu-App! Ready to Inspire and Teach?",
+                        bodyInHtml: htmlContent,
+                        inlineImages: [
+                            {
+                                contentId: "eduLogo",
+                                mimeType: "image/jpg",
+                                name: "eduAppLogo.jpg",
+                                path: "resources/edu-app-logo.jpg"
+                            }
+                        ]
+                    };
+
+                    gmail:Message sendResult = check gmail->/users/[email]/messages/send.post(message);
+                    io:println("Email sent. Message ID: " + sendResult.id);
+                }
             }
 
             json responseJson = {
                 "access_token": accessToken,
                 "refresh_token": refreshToken
             };
-            response.setHeader("message", http:OK.toString());
             response.setPayload(responseJson);
             return caller->respond(response);
         } else {
@@ -154,8 +245,8 @@ service / on new http:Listener(9093) {
         }
         // Prepare the request body for the token endpoint
         http:RequestMessage requestBody = {
-            "client_id": GOOGLE_CLIENT_ID,
-            "client_secret": GOOGLE_CLIENT_SECRET,
+            "client_id": clientId,
+            "client_secret": clientSecret,
             "grant_type": "refresh_token",
             "refresh_token": refreshToken
         };
@@ -167,17 +258,18 @@ service / on new http:Listener(9093) {
         // FIXME:
         json|error dummyResponse = check googleClient->/token.post(requestBody, headers);
 
-        if dummyResponse is json{
+        if dummyResponse is json {
             string accessToken = check dummyResponse.access_token;
             string idToken = check dummyResponse.id_token;
 
             stream<datasource:AuthCredentials, persist:Error?> authStream = self.dbClient->/authcredentials();
             int[] credId = check from datasource:AuthCredentials cred in authStream
-             where cred.refreshToken == refreshToken select cred.credId;
-            
+                where cred.refreshToken == refreshToken
+                select cred.credId;
+
             // TODO: extract credID from the array, suitable data type to store id_token             
             int credentialId = credId[0];
-            _ = check self.dbClient->/authcredentials/[credentialId].put({accessToken : accessToken, idToken : "id_token"});
+            _ = check self.dbClient->/authcredentials/[credentialId].put({accessToken: accessToken, idToken: idToken});
 
             json responseJson = {
                 "access_token": accessToken,
@@ -191,9 +283,9 @@ service / on new http:Listener(9093) {
         }
     }
 
-     resource function post revoke(http:Caller caller, http:Request req) returns http:ListenerError?|error {
+    resource function post revoke(http:Caller caller, http:Request req) returns http:ListenerError?|error {
         //TODO: 
-     }
+    }
 }
 
 function decodeIdToken(string idToken) returns json|error {

@@ -3,7 +3,9 @@ import educational_app_backend.datasource;
 import ballerina/http;
 import ballerina/persist;
 import ballerina/time;
-
+import ballerina/mime;
+import ballerina/io;
+//import ballerina/ftp;
 
 
 
@@ -150,6 +152,34 @@ service http:InterceptableService /users on new http:Listener(9091) {
             }
         }
         return http:NO_CONTENT;
+    }
+
+    resource function post uploadFile(http:Caller caller, http:Request req) returns error?{
+            mime:Entity[] parts = check req.getBodyParts();
+            // Assume the first part is the file part
+            if parts.length() > 0 {
+                mime:Entity filePart = parts[0];
+
+                // Get the filename from the headers (optional)
+                string? fileName = filePart.getContentDisposition().toString();
+                // filePart.getContentDisposition()?.getParameter("filename");
+                if fileName is () {
+                    fileName = "uploaded_file.txt"; // Default filename if none provided
+                } else {
+                //stream<io:Block, io:Error?> bStream = check io:fileReadBlocksAsStream("./resources/docs/mid_exam.pdf", 5);
+                // ftp:Error? response = check clientEp->put("/home/in/final_exam_1.pdf", bStream);
+
+                stream<byte[], io:Error?>|mime:ParserError byteStream = filePart.getByteStream();
+                io:println(byteStream);
+                //TODO:
+                //ftp:Error? response = check clientEp->put("/home/in/" + fileName + ".txt", byteStream);
+
+                // Respond back to the caller
+                check caller->respond("File uploaded successfully as " + fileName);
+                }
+            } else {
+                check caller->respond("No file found in the request.");
+            }
     }
 }
 

@@ -58,6 +58,20 @@ service http:InterceptableService /users on new http:Listener(9091) {
         return http:CREATED;
     }
 
+    //resource to handle book sessions
+    resource function put session_booking/[int sessionId](boolean isBooked) returns http:InternalServerError|http:Conflict|http:Created {
+        datasource:Session|persist:Error session = self.dbClient->/sessions/[sessionId].put({isBooked});
+        if session is persist:Error {
+            if session is persist:AlreadyExistsError {
+                return http:CONFLICT;
+            }
+            return http:INTERNAL_SERVER_ERROR;
+        }
+        datasource:Tutor tutor = check self.dbClient->/tutors/[session.tutorTutorId];
+         string event_id = check createEventByPost(session, tutor);
+        return http:CREATED;
+    }
+
     //resource to handle get sessions for a given tutor at a given date
     resource function get tutor/[int tutorId]/sessions(int year, int month, int day, int hour) returns datasource:Session[]|error {
         stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions();

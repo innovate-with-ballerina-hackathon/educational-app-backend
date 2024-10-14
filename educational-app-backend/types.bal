@@ -1,4 +1,5 @@
 import ballerina/graphql;
+import ballerina/ftp;
 
 public type ReviewInput record {|
     string review;
@@ -6,6 +7,22 @@ public type ReviewInput record {|
     int tutorTutorId;
 |};
 
+public type SftpConfig record {|
+    ftp:Protocol protocol;
+    string host;
+    int port;
+    ftp:AuthConfiguration auth;
+|};
+
+public type SftpListenerConfig record {|
+    ftp:Protocol protocol;
+    string host;
+    int port;
+    string path = "/";
+    ftp:AuthConfiguration auth;
+    string fileNamePattern;
+    decimal pollingInterval;
+|};
 
 
 readonly service class TutorAuthInterceptor {

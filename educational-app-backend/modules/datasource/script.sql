@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS `Review`;
 DROP TABLE IF EXISTS `Payment`;
 DROP TABLE IF EXISTS `Session`;
 DROP TABLE IF EXISTS `Tutor`;
+
 DROP TABLE IF EXISTS `QuizTaken`;
 DROP TABLE IF EXISTS `Option`;
 DROP TABLE IF EXISTS `Question`;
@@ -27,7 +28,7 @@ CREATE TABLE `AuthCredentials` (
 	`userRole` VARCHAR(191) NOT NULL,
 	`accessToken` VARCHAR(255) NOT NULL,
 	`refreshToken` VARCHAR(255) NOT NULL,
-	`idToken` TEXT NOT NULL,
+	`idToken` VARCHAR(1024) NOT NULL,
 	PRIMARY KEY(`credId`)
 );
 
@@ -134,5 +135,6 @@ CREATE TABLE `TutorNStudent` (
 );
 
 
+CREATE UNIQUE INDEX `access_token` ON `AuthCredentials` (`accessToken`);
 CREATE UNIQUE INDEX `tutor_email` ON `Tutor` (`email`);
 CREATE UNIQUE INDEX `student_email` ON `Student` (`email`);

@@ -52,6 +52,7 @@ public type AuthCredentials record {|
     readonly int credId;
     string userRole;
     @sql:Varchar {length: 255}
+    @sql:UniqueIndex {name: "access_token"}
     string accessToken;
     @sql:Varchar {length: 255}
     string refreshToken;

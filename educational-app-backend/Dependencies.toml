@@ -60,6 +60,20 @@ dependencies = [
 
 [[package]]
 org = "ballerina"
+name = "ftp"
+version = "2.11.0"
+dependencies = [
+	{org = "ballerina", name = "io"},
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "log"},
+	{org = "ballerina", name = "task"}
+]
+modules = [
+	{org = "ballerina", packageName = "ftp", moduleName = "ftp"}
+]
+
+[[package]]
+org = "ballerina"
 name = "graphql"
 version = "1.14.0"
 dependencies = [
@@ -252,6 +266,9 @@ dependencies = [
 	{org = "ballerina", name = "lang.int"},
 	{org = "ballerina", name = "log"}
 ]
+modules = [
+	{org = "ballerina", packageName = "mime", moduleName = "mime"}
+]
 
 [[package]]
 org = "ballerina"
@@ -443,10 +460,12 @@ org = "sakur"
 name = "educational_app_backend"
 version = "0.1.0"
 dependencies = [
+	{org = "ballerina", name = "ftp"},
 	{org = "ballerina", name = "graphql"},
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "io"},
 	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "mime"},
 	{org = "ballerina", name = "persist"},
 	{org = "ballerina", name = "sql"},
 	{org = "ballerina", name = "time"},

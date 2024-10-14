@@ -2,6 +2,7 @@ import educational_app_backend.datasource;
 
 import ballerina/http;
 import ballerina/io;
+import ballerina/mime;
 import ballerina/persist;
 import ballerinax/googleapis.gmail;
 
@@ -11,7 +12,9 @@ configurable string refreshToken = ?;
 
 string companyName = "Edu-App";
 
-http:Client googleClient = check new ("https://oauth2.googleapis.com");
+http:Client googleClient = check new ("https://oauth2.googleapis.com", followRedirects = {enabled: true});
+
+datasource:Client dbClient = check new;
 
 gmail:Client gmail = check new gmail:Client(
     config = {
@@ -24,11 +27,6 @@ gmail:Client gmail = check new gmail:Client(
 );
 
 service / on new http:Listener(9093) {
-    private final datasource:Client dbClient;
-
-    function init() returns error? {
-        self.dbClient = check new ();
-    }
 
     resource function post token(http:Caller caller, http:Request req) returns http:ListenerError?|error {
         //Extract parameters from the request
@@ -54,7 +52,7 @@ service / on new http:Listener(9093) {
             return caller->respond(response);
         }
 
-        stream<datasource:Subject, persist:Error?> subjectStream = self.dbClient->/subjects();
+        stream<datasource:Subject, persist:Error?> subjectStream = dbClient->/subjects();
         int[] subId = check from datasource:Subject sub in subjectStream
             where sub.name == subject
             select sub.subjectId;
@@ -70,26 +68,11 @@ service / on new http:Listener(9093) {
             "redirect_uri": redirectUri
         };
 
-        map<string|string[]>? headers = {
-            "Content-Type": "application/x-www-form-urlencoded"
-        };
-
-        // FIXME:
-        //json|error dummyResponse = check googleClient->/token.post(requestBody, headers);
-        //io:print(dummyResponse);
-        json dummyResponse =
-        {
-            "access_token": "ya29.a0AcM612yWg6O6aa1Iq4dDpqtZMdw9RfJ33C3mVRg7RaUL7jHtzKnh8PvQsg926Pr9pdi664aYbNUu7K9qPoSg6ipDgXEvX4EbKaxYvbOGEtrRS1yai6C3F19ORJgF_vDTkP23E6A-bU_SY-5PJDl-oPuRfIC9UpycjGaKLnH7aCgYKAWoSARISFQHGX2MiU9pRVBgLCwbllAOl7u4dPQ0175",
-            "expires_in": 3599,
-            "scope": "https://www.googleapis.com/auth/gmail.addons.current.message.action https://www.googleapis.com/auth/gmail.settings.basic https://www.googleapis.com/auth/gmail.addons.current.action.compose https://www.googleapis.com/auth/gmail.settings.sharing https://www.googleapis.com/auth/userinfo.email https://mail.google.com/ https://www.googleapis.com/auth/gmail.insert https://www.googleapis.com/auth/gmail.labels https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/gmail.addons.current.message.metadata https://www.googleapis.com/auth/gmail.addons.current.message.readonly openid",
-            "token_type": "Bearer",
-            "refresh_token": "1//041YTZLinpExoCgYIARAAGAQSNwF-L9Ir_k5WKInZY6Rj8J_op5j8EnSYj-p0PwFtssnnYmJ_An9r_0iL8gEMFIHtvnVNssI1L4A",
-            "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImE1MGY2ZTcwZWY0YjU0OGE1ZmQ5MTQyZWVjZDFmYjhmNTRkY2U5ZWUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIyMjI4OTU5NTg3MzYtOGsxcG5jN2pxOXFxajdkMzZoMnRhNnJvdjI0ZTE1Y3AuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIyMjI4OTU5NTg3MzYtOGsxcG5jN2pxOXFxajdkMzZoMnRhNnJvdjI0ZTE1Y3AuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDQxNTM5MjU1MDYyMTY0NTcwOTYiLCJlbWFpbCI6ImhpbWFuc2hpcG9kaW5pLjIwMDBAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF0X2hhc2giOiJuMDJVVHV4M2dSS3RRSXl2S3RXSl9nIiwibmFtZSI6IkhpbWFuc2hpIERlIFNpbHZhIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0oycWJPRU5HaU9QX2ZKRGkzMFBRSzgwWmhCNXYtSHlSR0QxZWNMTVZTb3V5Q0lDT2EyPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6IkhpbWFuc2hpIiwiZmFtaWx5X25hbWUiOiJEZSBTaWx2YSIsImlhdCI6MTcyODg0NDk5NiwiZXhwIjoxNzI4ODQ4NTk2fQ.YIrrR8rT2-n7_v026arl_7p0uU22kvhsnD314bIQ1I6kFFG3ug7dbsXOvzmm5Y_lBehfHBc25RvwIy0C3VBTycE8FXdox857T594A6eJPCmNPQc0uEBdSpxbVZktFapPPrQkJ21iBktEfC7nDKpTff77Gb5n435fN8NbaHUvNyWYr6ew3D8P2_1PfnsglHXUDkj-a2O_sMC_poiJVwdS3sHexXBN8wAVP0NffSQm1m--8oVwKslzHhoiHXzkyR3vSncTz9zoo_9DkL-P3LhvG6AUxNkGB2FLQ_KLi9wn3ixkx7tw2z1cT55dgmkv1VtE3ZOHVw2gomwX9gJBHorL7g"
-        };
+        json|error dummyResponse = googleClient->/token.post(requestBody, mediaType = mime:APPLICATION_FORM_URLENCODED);
 
         if (dummyResponse is json) {
             string accessToken = check dummyResponse.access_token;
-            string refreshToken = check dummyResponse.refresh_token;
+            string? refreshToken = check dummyResponse.refresh_token;
             string idToken = check dummyResponse.id_token;
 
             json decodedIdToken = check decodeIdToken(idToken);
@@ -99,122 +82,56 @@ service / on new http:Listener(9093) {
             string lastName = check decodedIdToken.family_name;
             string email = check decodedIdToken.email;
 
-            if userRole == "student" {
-                datasource:AuthCredentialsInsert credentials = {
-                    "userRole": userRole,
-                    "accessToken": accessToken,
-                    "refreshToken": refreshToken,
-                    "idToken": "idToken"
-                };
-                int[] credId = check self.dbClient->/authcredentials.post([credentials]);
-                int credentialId = credId[0];
-
-                datasource:StudentInsert student = {
-                    "firstName": firstName,
-                    "lastName": lastName,
-                    "email": email,
-                    "credentialsCredId": credentialId
-                };
-                int[]|persist:Error result = self.dbClient->/students.post([student]);
-                if result is persist:Error {
-                    if result is persist:AlreadyExistsError {
-                        response.setHeader("message", http:CONFLICT.toString() + "User Already Exists");
-                    }
-                    response.setHeader("message", http:INTERNAL_SERVER_ERROR.toString() + "Internal Server Error Occured");
-                } else {
-                    response.setHeader("message", http:OK.toString() + "User Created Successfully");
-
-                    string htmlContent = string `<html>
-    <head>
-        <title>Welcome to Edu-App</title>
-    </head>
-    <body>
-        <img src="cid:eduLogo" alt="Company Logo">
-        <p>Dear ${firstName},</p>
-        <p>Welcome to Edu-App! We're excited to have you onboard. Start exploring and connecting with expert tutors to reach your learning goals today!</p>
-        <p>Best Regards,</p>
-        <p>${companyName}</p>
-    </body>
-    </html>`;
-
-                    gmail:MessageRequest message = {
-                        to: [email],
-                        subject: "Welcome to Edu-App! Start Your Learning Journey Today",
-                        bodyInHtml: htmlContent,
-                        inlineImages: [
-                            {
-                                contentId: "eduLogo",
-                                mimeType: "image/jpg",
-                                name: "eduAppLogo.jpg",
-                                path: "resources/edu-app-logo.jpg"
-                            }
-                        ]
+            if (refreshToken is string) {
+                if userRole == "student" {
+                    int credentialId = check addAuthCredentials(userRole, accessToken, refreshToken, idToken);
+                    datasource:StudentInsert student = {
+                        "firstName": firstName,
+                        "lastName": lastName,
+                        "email": email,
+                        "credentialsCredId": credentialId
                     };
-
-                    gmail:Message sendResult = check gmail->/users/[email]/messages/send.post(message);
-                    io:println("Email sent. Message ID: " + sendResult.id);
+                    int[]|persist:Error result = dbClient->/students.post([student]);
+                    if result is persist:Error {
+                        if result is persist:AlreadyExistsError {
+                            response.setHeader("message", http:CONFLICT.toString() + "User Already Exists");
+                        }
+                        response.setHeader("message", http:INTERNAL_SERVER_ERROR.toString() + "Internal Server Error Occured");
+                    } else {
+                        response.setHeader("message", http:OK.toString() + "User Created Successfully");
+                        string emailBody = "Welcome to Edu-App! We're excited to have you onboard. Start exploring and connecting with expert tutors to reach your learning goals today!";
+                        sendOnboardingEmails(firstName, emailBody, email);
+                    }
+                } else {
+                    int credentialId = check addAuthCredentials(userRole, accessToken, refreshToken, idToken);
+                    datasource:TutorInsert tutor = {
+                        "firstName": firstName,
+                        "lastName": lastName,
+                        "email": email,
+                        "experienceYears": 0,
+                        "price": 0,
+                        "credentialsCredId": credentialId,
+                        "subjectSubjectId": subjectId
+                    };
+                    int[]|persist:Error result = dbClient->/tutors.post([tutor]);
+                    if result is persist:Error {
+                        if result is persist:AlreadyExistsError {
+                            response.setHeader("message", http:CONFLICT.toString() + "User Already Exists");
+                        }
+                        response.setHeader("message", http:INTERNAL_SERVER_ERROR.toString() + "Internal Server Error Occured");
+                    } else {
+                        response.setHeader("message", http:OK.toString() + "User Created Successfully");
+                        string emailBody = "Welcome to Edu-App! We're thrilled to have you join our community of educators. Get ready to share your expertise and help students succeed!";
+                        sendOnboardingEmails(firstName, emailBody, email);
+                    }
                 }
-
             } else {
-                datasource:AuthCredentialsInsert credentials = {
-                    "userRole": userRole,
-                    "accessToken": accessToken,
-                    "refreshToken": refreshToken,
-                    "idToken": idToken
-                };
-                int[] credId = check self.dbClient->/authcredentials.post([credentials]);
-                int credentialId = credId[0];
-
-                datasource:TutorInsert tutor = {
-                    "firstName": firstName,
-                    "lastName": lastName,
-                    "email": email,
-                    "experienceYears": 0,
-                    "price": 0,
-                    "credentialsCredId": credentialId,
-                    "subjectSubjectId": subjectId
-                };
-                int[]|persist:Error result = self.dbClient->/tutors.post([tutor]);
-                if result is persist:Error {
-                    if result is persist:AlreadyExistsError {
-                        response.setHeader("message", http:CONFLICT.toString() + "User Already Exists");
-                    }
-                    response.setHeader("message", http:INTERNAL_SERVER_ERROR.toString() + "Internal Server Error Occured");
-                } else {
-                    response.setHeader("message", http:OK.toString() + "User Created Successfully");
-
-                    string htmlContent = string `<html>
-    <head>
-        <title>Welcome to Edu-App</title>
-    </head>
-    <body>
-        <img src="cid:eduLogo" alt="Company Logo">
-        <p>Dear ${firstName},</p>
-        <p>Welcome to Edu-App! We're thrilled to have you join our community of educators. Get ready to share your expertise and help students succeed!</p>
-        <p>Best Regards,</p>
-        <p>${companyName}</p>
-    </body>
-    </html>`;
-
-                    gmail:MessageRequest message = {
-                        to: [email],
-                        subject: "Welcome to Edu-App! Ready to Inspire and Teach?",
-                        bodyInHtml: htmlContent,
-                        inlineImages: [
-                            {
-                                contentId: "eduLogo",
-                                mimeType: "image/jpg",
-                                name: "eduAppLogo.jpg",
-                                path: "resources/edu-app-logo.jpg"
-                            }
-                        ]
-                    };
-
-                    gmail:Message sendResult = check gmail->/users/[email]/messages/send.post(message);
-                    io:println("Email sent. Message ID: " + sendResult.id);
-                }
+                stream<datasource:AuthCredentials, persist:Error?> authStream = dbClient->/authcredentials();
+                string[] reqToken = check from datasource:AuthCredentials cred in authStream
+                where cred.accessToken == accessToken
+                select cred.refreshToken;
+                refreshToken = reqToken[0];
             }
-
             json responseJson = {
                 "access_token": accessToken,
                 "refresh_token": refreshToken
@@ -222,7 +139,9 @@ service / on new http:Listener(9093) {
             response.setPayload(responseJson);
             return caller->respond(response);
         } else {
-            // TODO: handle the expired access token
+            response.setHeader("error", "Invalid Access Token");
+            response.setPayload({"Invalid Access Token" : "You may request a new access token using the refresh token"});
+            return caller->respond(response);
         }
     }
 
@@ -251,25 +170,18 @@ service / on new http:Listener(9093) {
             "refresh_token": refreshToken
         };
 
-        map<string|string[]>? headers = {
-            "Content-Type": "application/x-www-form-urlencoded"
-        };
-
-        // FIXME:
-        json|error dummyResponse = check googleClient->/token.post(requestBody, headers);
+        json|error dummyResponse = check googleClient->/token.post(requestBody, mediaType = mime:APPLICATION_FORM_URLENCODED);
 
         if dummyResponse is json {
             string accessToken = check dummyResponse.access_token;
             string idToken = check dummyResponse.id_token;
 
-            stream<datasource:AuthCredentials, persist:Error?> authStream = self.dbClient->/authcredentials();
+            stream<datasource:AuthCredentials, persist:Error?> authStream = dbClient->/authcredentials();
             int[] credId = check from datasource:AuthCredentials cred in authStream
                 where cred.refreshToken == refreshToken
-                select cred.credId;
-
-            // TODO: extract credID from the array, suitable data type to store id_token             
+                select cred.credId;           
             int credentialId = credId[0];
-            _ = check self.dbClient->/authcredentials/[credentialId].put({accessToken: accessToken, idToken: idToken});
+            _ = check dbClient->/authcredentials/[credentialId].put({accessToken: accessToken, idToken: idToken});
 
             json responseJson = {
                 "access_token": accessToken,
@@ -279,13 +191,57 @@ service / on new http:Listener(9093) {
             response.setPayload(responseJson);
             return caller->respond(response);
         } else {
-            //TODO: handle expired refresh token
+            response.setHeader("error", "Invalid Refresh Token");
+            response.setPayload({"Invalid Refresh Token" : "You may request a new pair of tokens using either refresh token or access token"});
+            return caller->respond(response);
         }
     }
 
     resource function post revoke(http:Caller caller, http:Request req) returns http:ListenerError?|error {
         //TODO: 
     }
+}
+
+function sendOnboardingEmails(string firstName, string emailBody, string email) {
+    string htmlContent = string `<html>
+    <head>
+        <title>Welcome to Edu-App</title>
+    </head>
+    <body>
+        <img src="cid:eduLogo" alt="Company Logo">
+        <p>Dear ${firstName},</p>
+        <p>${emailBody}</p>
+        <p>Best Regards,</p>
+        <p>${companyName}</p>
+    </body>
+    </html>`;
+
+    gmail:MessageRequest message = {
+        to: [email],
+        subject: "Welcome to Edu-App!",
+        bodyInHtml: htmlContent,
+        inlineImages: [
+            {
+                contentId: "eduLogo",
+                mimeType: "image/jpg",
+                name: "eduAppLogo.jpg",
+                path: "resources/images/edu-app-logo.jpg"
+            }
+        ]
+    };
+    gmail:Message|error sendResult = gmail->/users/[email]/messages/send.post(message);
+    io:println(sendResult);
+}
+
+function addAuthCredentials(string userRole, string accessToken, string refreshToken1, string idToken) returns int|persist:Error {
+    datasource:AuthCredentialsInsert credentials = {
+        "userRole": userRole,
+        "accessToken": accessToken,
+        "refreshToken": refreshToken,
+        "idToken": "idToken"
+    };
+    int[] credId = check dbClient->/authcredentials.post([credentials]);
+    return credId[0];
 }
 
 function decodeIdToken(string idToken) returns json|error {

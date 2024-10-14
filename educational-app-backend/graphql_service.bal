@@ -2,8 +2,6 @@ import educational_app_backend.datasource;
 
 import ballerina/graphql;
 
-datasource:Client dbClient = check new;
-
 @graphql:ServiceConfig {
     graphiql: {
         enabled: true

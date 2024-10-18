@@ -47,7 +47,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
     }
 
     //resource to handle post requests for sessions
-    resource function post sessions(datasource:SessionInsert session) returns http:InternalServerError|http:Conflict|http:Created {
+    resource function post sessions(datasource:SessionInsert session) returns http:InternalServerError|http:Conflict|http:Created|error {
         int[]|persist:Error result = self.dbClient->/sessions.post([session]);
         if result is persist:Error {
             if result is persist:AlreadyExistsError {
@@ -59,17 +59,36 @@ service http:InterceptableService /users on new http:Listener(9091) {
     }
 
     //resource to handle book sessions
-    resource function put session_booking/[int sessionId](boolean isBooked) returns http:InternalServerError|http:Conflict|http:Created {
-        datasource:Session|persist:Error session = self.dbClient->/sessions/[sessionId].put({isBooked});
+    resource function put session_booking/[int sessionId](http:Caller caller, http:Request req) returns error?{
+        string? confirmation = check req.getQueryParamValue("isBooked");
+        string? stuId = check req.getQueryParamValue("studentId");
+        http:Response response = new;
+        if (confirmation == null || stuId == null || confirmation == "False") {
+            response.setHeader("error", "Missing required parameters.");
+            string[] missingParams = [];
+            if (confirmation == null || confirmation == "False") {
+                missingParams.push("Confirmation");
+            }
+            if (stuId == null) {
+                missingParams.push("studentId");
+            }
+            response.setPayload({"missingParameters": missingParams});
+            return caller->respond(response);
+        }
+        boolean isBooked = true;
+        int studentId = check int:fromString(stuId);
+        datasource:Session|persist:Error session = self.dbClient->/sessions/[sessionId].put({isBooked: isBooked , studentStudentId: studentId});
+        // TODO: need to set a session unique by the starting time and ending time
         if session is persist:Error {
             if session is persist:AlreadyExistsError {
-                return http:CONFLICT;
+                return caller->respond(http:CONFLICT.toString());
             }
-            return http:INTERNAL_SERVER_ERROR;
+            return caller->respond(http:INTERNAL_SERVER_ERROR.toString());
         }
         datasource:Tutor tutor = check self.dbClient->/tutors/[session.tutorTutorId];
-         string event_id = check createEventByPost(session, tutor);
-        return http:CREATED;
+        datasource:Student student = check self.dbClient->/students/[session.studentStudentId];
+        string event_id = check createEventByPost(session, tutor, student);
+        return caller->respond(session);
     }
 
     //resource to handle get sessions for a given tutor at a given date

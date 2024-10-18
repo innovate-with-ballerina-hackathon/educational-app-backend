@@ -1,12 +1,10 @@
 import ballerinax/googleapis.gcalendar;
-import ballerina/io;
 import ballerina/uuid;
 import educational_app_backend.datasource;
 
 // configurable string clientId = ?;
 // configurable string clientSecret = ?;
 // configurable string refreshToken = ?;
-configurable string email = ?;
 
 gcalendar:ConnectionConfig gcalendarConfig = {
    auth: {
@@ -16,21 +14,25 @@ gcalendar:ConnectionConfig gcalendarConfig = {
    }
 };
 
-gcalendar:Client calendar ;
+gcalendar:Client calendarClient = check new(gcalendarConfig);
 
-string calendarId = "";
-
-function createEvent(gcalendar:Client calendar, string calendarId, datasource:Session session, gcalendar:EventAttendee[] eventAttendees, string subject, string tutorsFirstName) returns gcalendar:Event|error {
+function createCalendar() returns string|error {
+    gcalendar:Calendar calendarResult = check calendarClient->/calendars.post({
+       summary: "Session Schedule"
+   });
+    return <string>calendarResult.id;
+}
+function createEvent(string calendarId, datasource:Session session, gcalendar:EventAttendee[] eventAttendees, string subject, string tutorsFirstName) returns gcalendar:Event|error {
     string uuid1String = uuid:createType1AsString();
-    gcalendar:Event event = check calendar->/calendars/[calendarId]/events.post(
+    gcalendar:Event event = check calendarClient->/calendars/[calendarId]/events.post(
    payload =
        {
        'start: {
-           dateTime: session.sessionTime.toString(),//'2024-02-22T11:00:00+00:00'
+           dateTime: "2024-10-17T16:00:00+00:00",//'2024-02-22T11:00:00+00:00'
            timeZone: "UTC"
        },
        end: {
-           dateTime: "2024-02-22T11:00:00+00:00",
+           dateTime: "2024-10-17T17:00:00+00:00",
            timeZone: "UTC"
        },
        summary: subject +" with "+ tutorsFirstName,
@@ -42,7 +44,20 @@ function createEvent(gcalendar:Client calendar, string calendarId, datasource:Se
                    'type: "hangoutsMeet"
                }
            }
-       }
+       },
+       reminders: {
+            useDefault: true
+            // overrides: [
+            //     {
+            //         method: "popup",
+            //         minutes: 15
+            //     },
+            //     {
+            //         method: "email",
+            //         minutes: 30
+            //     }
+            // ]
+        }
    },
    conferenceDataVersion = 1
 );
@@ -50,9 +65,10 @@ function createEvent(gcalendar:Client calendar, string calendarId, datasource:Se
 }
 
 
-function createEventByPost(datasource:Session session, datasource:Tutor tutor) returns string|error {
-    gcalendar:EventAttendee[] eventAttendees = [{email:tutor.email}];
-    gcalendar:Event event = check createEvent(calendar,calendarId,session,eventAttendees, subject, tutor.firstName);
-    
+function createEventByPost(datasource:Session session, datasource:Tutor tutor, datasource:Student student) returns string|error {
+    gcalendar:EventAttendee[] eventAttendees = [{email:tutor.email}, {email:student.email}];
+    datasource:Subject subject = check dbClient->/subjects/[tutor.subjectSubjectId];
+    string calendarId = check createCalendar();
+    gcalendar:Event event = check createEvent(calendarId,session,eventAttendees, subject.name, tutor.firstName);
     return <string>event.id;
 }

@@ -52,13 +52,6 @@ service / on new http:Listener(9093) {
             return caller->respond(response);
         }
 
-        stream<datasource:Subject, persist:Error?> subjectStream = dbClient->/subjects();
-        int[] subId = check from datasource:Subject sub in subjectStream
-            where sub.name == subject
-            select sub.subjectId;
-
-        int subjectId = subId[0];
-
         // Prepare the request body for the token endpoint
         http:RequestMessage requestBody = {
             "client_id": clientId,
@@ -104,6 +97,13 @@ service / on new http:Listener(9093) {
                     }
                 } else {
                     int credentialId = check addAuthCredentials(userRole, accessToken, refreshToken, idToken);
+                    stream<datasource:Subject, persist:Error?> subjectStream = dbClient->/subjects();
+                    int[] subId = check from datasource:Subject sub in subjectStream
+                        where sub.name == subject
+                        select sub.subjectId;
+
+                    int subjectId = subId[0];
+
                     datasource:TutorInsert tutor = {
                         "firstName": firstName,
                         "lastName": lastName,
@@ -128,8 +128,8 @@ service / on new http:Listener(9093) {
             } else {
                 stream<datasource:AuthCredentials, persist:Error?> authStream = dbClient->/authcredentials();
                 string[] reqToken = check from datasource:AuthCredentials cred in authStream
-                where cred.accessToken == accessToken
-                select cred.refreshToken;
+                    where cred.accessToken == accessToken
+                    select cred.refreshToken;
                 refreshToken = reqToken[0];
             }
             json responseJson = {
@@ -140,7 +140,7 @@ service / on new http:Listener(9093) {
             return caller->respond(response);
         } else {
             response.setHeader("error", "Invalid Access Token");
-            response.setPayload({"Invalid Access Token" : "You may request a new access token using the refresh token"});
+            response.setPayload({"Invalid Access Token": "You may request a new access token using the refresh token"});
             return caller->respond(response);
         }
     }
@@ -179,7 +179,7 @@ service / on new http:Listener(9093) {
             stream<datasource:AuthCredentials, persist:Error?> authStream = dbClient->/authcredentials();
             int[] credId = check from datasource:AuthCredentials cred in authStream
                 where cred.refreshToken == refreshToken
-                select cred.credId;           
+                select cred.credId;
             int credentialId = credId[0];
             _ = check dbClient->/authcredentials/[credentialId].put({accessToken: accessToken, idToken: idToken});
 
@@ -192,7 +192,7 @@ service / on new http:Listener(9093) {
             return caller->respond(response);
         } else {
             response.setHeader("error", "Invalid Refresh Token");
-            response.setPayload({"Invalid Refresh Token" : "You may request a new pair of tokens using either refresh token or access token"});
+            response.setPayload({"Invalid Refresh Token": "You may request a new pair of tokens using either refresh token or access token"});
             return caller->respond(response);
         }
     }
@@ -229,7 +229,7 @@ function sendOnboardingEmails(string firstName, string emailBody, string email) 
             }
         ]
     };
-    gmail:Message|error sendResult = gmail->/users/[email]/messages/send.post(message);
+    gmail:Message|error sendResult = gmail->/users/me/messages/send.post(message);
     io:println(sendResult);
 }
 

@@ -141,30 +141,14 @@ service http:InterceptableService /users on new http:Listener(9091) {
         time:Civil newStartingTime = <time:Civil>rescheduledSession.startingTime;
         time:Civil newEndingTime = <time:Civil>rescheduledSession.endingTime;
 
-        // Fetch the existing session from the database
-        // datasource:Session|persist:Error existingSession = self.dbClient->/sessions/[sessionId];
-
-        // // Ensure the session is booked before allowing rescheduling
-        // time:Utc currentTime = time:utcNow();
-
-        // Calculate the cutoff time (24 hours before the scheduled session time)
-        //time:Seconds cutoffTime = time:utcDiffSeconds(time:utcFromCivil(existingSession.sessionTime), time:utcNow());
-
-        // // Check if rescheduling is allowed
-        // if (currentTime >= cutoffTime) {
-        //     // Respond with an error if the session cannot be rescheduled
-        //     return caller->respond({
-        //         message: "Rescheduling is only allowed 24 hours before the session.",
-        //         status: "error"
-        //     });
-        // }
-
-        datasource:Session|persist:Error result = self.dbClient->/sessions/[sessionId].put({startingTime: newStartingTime, endingTime: newEndingTime});
-        if result is persist:Error {
-            if result is persist:NotFoundError {
+        datasource:Session|persist:Error updatedSession = self.dbClient->/sessions/[sessionId].put({startingTime: newStartingTime, endingTime: newEndingTime});
+        if updatedSession is persist:Error {
+            if updatedSession is persist:NotFoundError {
                 return http:NOT_FOUND;
             }
             return http:INTERNAL_SERVER_ERROR;
+        } else if updatedSession.status == datasource:BOOKED && updatedSession.eventId != "" && updatedSession.eventId != () {
+            _ = check updateEvent(<string>updatedSession.eventId, updatedSession);
         }
         return http:NO_CONTENT;
     }

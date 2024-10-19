@@ -2,7 +2,7 @@ import educational_app_backend.datasource;
 
 import ballerina/http;
 import ballerina/persist;
-import ballerina/time;
+//import ballerina/time;
 import ballerina/mime;
 import ballerina/io;
 //import ballerina/ftp;
@@ -60,7 +60,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
 
     //resource to handle book sessions
     resource function put session_booking/[int sessionId](http:Caller caller, http:Request req) returns error?{
-        string? stuId = check req.getQueryParamValue("studentId");
+        string? stuId = req.getQueryParamValue("studentId");
         http:Response response = new;
         if (stuId == null) {
             response.setHeader("error", "Missing required parameters.");
@@ -69,23 +69,24 @@ service http:InterceptableService /users on new http:Listener(9091) {
             return caller->respond(response);
         }
         int studentId = check int:fromString(stuId);
-        int[]|persist:Error booking = self.dbClient->/bookings.post([{
+        _ = check self.dbClient->/bookings.post([{
             sessionSessionId: sessionId, 
             studentStudentId : studentId
         }]);
         
         // TODO: need to set a session unique by the starting time and ending time
-        if booking is persist:Error {
-            if booking is persist:AlreadyExistsError {
-                return caller->respond(http:CONFLICT.toString());
-            }
-            return caller->respond(http:INTERNAL_SERVER_ERROR.toString());
-        }
+        // if booking is persist:Error {
+        //     if booking is persist:AlreadyExistsError {
+        //         return caller->respond(http:CONFLICT.toString());
+        //     }
+        //     return caller->respond(http:INTERNAL_SERVER_ERROR.toString());
+        // }
         datasource:Session session = check self.dbClient->/sessions/[sessionId];
         datasource:Tutor tutor = check self.dbClient->/tutors/[session.tutorTutorId];
         datasource:Student student = check self.dbClient->/students/[studentId];
         string event_id = check createEventByPost(session, tutor, student);
-        return caller->respond(session);
+        datasource:Session|persist:Error updatedSession = self.dbClient->/sessions/[sessionId].put({eventId: event_id, status: datasource:BOOKED});
+        return caller->respond(updatedSession);
     }
 
     //resource to handle get sessions for a given tutor at a given date
@@ -125,65 +126,65 @@ service http:InterceptableService /users on new http:Listener(9091) {
     }
 
     // Define the resource to reschedule the session by sessionID
-    resource function put sessions/[int sessionId]/reschedule(datasource:SessionUpdate rescheduledSession) returns http:InternalServerError & readonly|http:NoContent & readonly|http:NotFound & readonly|error {
+    // resource function put sessions/[int sessionId]/reschedule(datasource:SessionUpdate rescheduledSession) returns http:InternalServerError & readonly|http:NoContent & readonly|http:NotFound & readonly|error {
 
-        time:Civil newStartingTime = <time:Civil>rescheduledSession.startingTime;
-        time:Civil newEndingTime = <time:Civil>rescheduledSession.endingTime;
+    //     time:Civil newStartingTime = <time:Civil>rescheduledSession.startingTime;
+    //     time:Civil newEndingTime = <time:Civil>rescheduledSession.endingTime;
         
 
-        // Fetch the existing session from the database
-        // datasource:Session|persist:Error existingSession = self.dbClient->/sessions/[sessionId];
+    //     // Fetch the existing session from the database
+    //     // datasource:Session|persist:Error existingSession = self.dbClient->/sessions/[sessionId];
 
-        // // Ensure the session is booked before allowing rescheduling
-        // time:Utc currentTime = time:utcNow();
+    //     // // Ensure the session is booked before allowing rescheduling
+    //     // time:Utc currentTime = time:utcNow();
 
-        // Calculate the cutoff time (24 hours before the scheduled session time)
-        //time:Seconds cutoffTime = time:utcDiffSeconds(time:utcFromCivil(existingSession.sessionTime), time:utcNow());
+    //     // Calculate the cutoff time (24 hours before the scheduled session time)
+    //     //time:Seconds cutoffTime = time:utcDiffSeconds(time:utcFromCivil(existingSession.sessionTime), time:utcNow());
 
-        // // Check if rescheduling is allowed
-        // if (currentTime >= cutoffTime) {
-        //     // Respond with an error if the session cannot be rescheduled
-        //     return caller->respond({
-        //         message: "Rescheduling is only allowed 24 hours before the session.",
-        //         status: "error"
-        //     });
-        // }
+    //     // // Check if rescheduling is allowed
+    //     // if (currentTime >= cutoffTime) {
+    //     //     // Respond with an error if the session cannot be rescheduled
+    //     //     return caller->respond({
+    //     //         message: "Rescheduling is only allowed 24 hours before the session.",
+    //     //         status: "error"
+    //     //     });
+    //     // }
 
-        datasource:Session|persist:Error result = self.dbClient->/sessions/[sessionId].put({startingTime: newStartingTime, endingTime : newEndingTime});
-        if result is persist:Error {
-            if result is persist:NotFoundError {
-                return http:NOT_FOUND;
-            }
-            return http:INTERNAL_SERVER_ERROR;
-        }
-        return http:NO_CONTENT;
-    }
+    //     datasource:Session|persist:Error result = self.dbClient->/sessions/[sessionId].put({startingTime: newStartingTime, endingTime : newEndingTime});
+    //     if result is persist:Error {
+    //         if result is persist:NotFoundError {
+    //             return http:NOT_FOUND;
+    //         }
+    //         return http:INTERNAL_SERVER_ERROR;
+    //     }
+    //     return http:NO_CONTENT;
+    // }
 
-    //resource to handle DELETE requests for sessions on students requests
-    resource function delete students/[int id]/sessions(int year, int month, int day) returns http:InternalServerError & readonly|http:NoContent & readonly|http:NotFound & readonly {
+    // //resource to handle DELETE requests for sessions on students requests
+    // resource function delete students/[int id]/sessions(int year, int month, int day) returns http:InternalServerError & readonly|http:NoContent & readonly|http:NotFound & readonly {
 
-        //calender event also needs to be deleted
-        stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions;
-        datasource:Session[]|persist:Error result = from datasource:Session session in sessions
-            where session.sessionId == id
-            && session.startingTime.year == year
-            && session.startingTime.month == month
-            && session.startingTime.day == day
-            select session;
-        if result is persist:Error {
-            if result is persist:NotFoundError {
-                return http:NOT_FOUND;
-            }
-            return http:INTERNAL_SERVER_ERROR;
-        }
-        foreach datasource:Session session in result {
-            datasource:Session|persist:Error deleteResult = self.dbClient->/sessions/[session.sessionId].delete();
-            if deleteResult is persist:Error {
-                return http:INTERNAL_SERVER_ERROR;
-            }
-        }
-        return http:NO_CONTENT;
-    }
+    //     //calender event also needs to be deleted
+    //     stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions;
+    //     datasource:Session[]|persist:Error result = from datasource:Session session in sessions
+    //         where session.sessionId == id
+    //         && session.startingTime.year == year
+    //         && session.startingTime.month == month
+    //         && session.startingTime.day == day
+    //         select session;
+    //     if result is persist:Error {
+    //         if result is persist:NotFoundError {
+    //             return http:NOT_FOUND;
+    //         }
+    //         return http:INTERNAL_SERVER_ERROR;
+    //     }
+    //     foreach datasource:Session session in result {
+    //         datasource:Session|persist:Error deleteResult = self.dbClient->/sessions/[session.sessionId].delete();
+    //         if deleteResult is persist:Error {
+    //             return http:INTERNAL_SERVER_ERROR;
+    //         }
+    //     }
+    //     return http:NO_CONTENT;
+    // }
 
     resource function post uploadFile(http:Caller caller, http:Request req) returns error?{
             mime:Entity[] parts = check req.getBodyParts();

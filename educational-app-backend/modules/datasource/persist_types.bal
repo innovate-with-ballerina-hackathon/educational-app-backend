@@ -5,105 +5,95 @@
 
 import ballerina/time;
 
-public enum PaymentStatus {
-    PENDING,
-    PAID
-}
-
 public enum SessionStatus {
     SCHEDULED,
+    BOOKED,
     CANCELLED,
-    STARTED,
     ENDED
 }
 
-public type Payment record {|
-    readonly int paymentId;
-    int amount;
-    PaymentStatus status;
-    string paymentMethod;
-    string transactionDate;
-    int sessionSessionId;
-|};
-
-public type PaymentOptionalized record {|
-    int paymentId?;
-    int amount?;
-    PaymentStatus status?;
-    string paymentMethod?;
-    string transactionDate?;
-    int sessionSessionId?;
-|};
-
-public type PaymentWithRelations record {|
-    *PaymentOptionalized;
-    SessionOptionalized session?;
-|};
-
-public type PaymentTargetType typedesc<PaymentWithRelations>;
-
-public type PaymentInsert record {|
-    int amount;
-    PaymentStatus status;
-    string paymentMethod;
-    string transactionDate;
-    int sessionSessionId;
-|};
-
-public type PaymentUpdate record {|
-    int amount?;
-    PaymentStatus status?;
-    string paymentMethod?;
-    string transactionDate?;
-    int sessionSessionId?;
-|};
+public enum Category {
+    ASTRO,
+    PHYSICS,
+    CHEMISTRY,
+    GEOMETRY,
+    ENGLISH,
+    FRENCH,
+    GERMAN,
+    BIOLOGY
+}
 
 public type Session record {|
     readonly int sessionId;
     int tutorTutorId;
-    int studentStudentId;
-    time:Civil sessionTime;
-    int duration;
+    time:Civil startingTime;
+    time:Civil endingTime;
     SessionStatus status;
+    string eventId;
 
-    boolean isBooked;
 |};
 
 public type SessionOptionalized record {|
     int sessionId?;
     int tutorTutorId?;
-    int studentStudentId?;
-    time:Civil sessionTime?;
-    int duration?;
+    time:Civil startingTime?;
+    time:Civil endingTime?;
     SessionStatus status?;
-    boolean isBooked?;
+    string eventId?;
 |};
 
 public type SessionWithRelations record {|
     *SessionOptionalized;
     TutorOptionalized tutor?;
-    StudentOptionalized student?;
-    PaymentOptionalized payment?;
+    BookingOptionalized booking?;
 |};
 
 public type SessionTargetType typedesc<SessionWithRelations>;
 
 public type SessionInsert record {|
     int tutorTutorId;
-    int studentStudentId;
-    time:Civil sessionTime;
-    int duration;
+    time:Civil startingTime;
+    time:Civil endingTime;
     SessionStatus status;
-    boolean isBooked;
+    string eventId;
 |};
 
 public type SessionUpdate record {|
     int tutorTutorId?;
-    int studentStudentId?;
-    time:Civil sessionTime?;
-    int duration?;
+    time:Civil startingTime?;
+    time:Civil endingTime?;
     SessionStatus status?;
-    boolean isBooked?;
+    string eventId?;
+|};
+
+public type Booking record {|
+    readonly int bookingId;
+    int sessionSessionId;
+    int studentStudentId;
+|};
+
+public type BookingOptionalized record {|
+    int bookingId?;
+    int sessionSessionId?;
+    int studentStudentId?;
+|};
+
+public type BookingWithRelations record {|
+    *BookingOptionalized;
+    SessionOptionalized session?;
+    StudentOptionalized student?;
+|};
+
+public type BookingTargetType typedesc<BookingWithRelations>;
+
+public type BookingInsert record {|
+    int sessionSessionId;
+    int studentStudentId;
+|};
+
+public type BookingUpdate record {|
+    int sessionSessionId?;
+    int studentStudentId?;
 |};
 
 public type Review record {|
@@ -193,6 +183,7 @@ public type Tutor record {|
     int subjectSubjectId;
     int? experienceYears;
     int? price;
+
 |};
 
 public type TutorOptionalized record {|
@@ -213,6 +204,7 @@ public type TutorWithRelations record {|
     ReviewOptionalized[] reviews?;
     AuthCredentialsOptionalized credentials?;
     SubjectOptionalized subject?;
+    DocumentOptionalized document?;
 |};
 
 public type TutorTargetType typedesc<TutorWithRelations>;
@@ -263,124 +255,6 @@ public type SubjectUpdate record {|
     string name?;
 |};
 
-public type Option record {|
-    readonly int optionId;
-    string text;
-    boolean isCorrect;
-    int questionQuestionId;
-|};
-
-public type OptionOptionalized record {|
-    int optionId?;
-    string text?;
-    boolean isCorrect?;
-    int questionQuestionId?;
-|};
-
-public type OptionWithRelations record {|
-    *OptionOptionalized;
-    QuestionOptionalized question?;
-|};
-
-public type OptionTargetType typedesc<OptionWithRelations>;
-
-public type OptionInsert record {|
-    string text;
-    boolean isCorrect;
-    int questionQuestionId;
-|};
-
-public type OptionUpdate record {|
-    string text?;
-    boolean isCorrect?;
-    int questionQuestionId?;
-|};
-
-public type Question record {|
-    readonly int questionId;
-    string questionText;
-
-    int quizQuizId;
-|};
-
-public type QuestionOptionalized record {|
-    int questionId?;
-    string questionText?;
-    int quizQuizId?;
-|};
-
-public type QuestionWithRelations record {|
-    *QuestionOptionalized;
-    OptionOptionalized[] options?;
-    QuizOptionalized quiz?;
-|};
-
-public type QuestionTargetType typedesc<QuestionWithRelations>;
-
-public type QuestionInsert record {|
-    string questionText;
-    int quizQuizId;
-|};
-
-public type QuestionUpdate record {|
-    string questionText?;
-    int quizQuizId?;
-|};
-
-public type Quiz record {|
-    readonly int quizId;
-
-|};
-
-public type QuizOptionalized record {|
-    int quizId?;
-|};
-
-public type QuizWithRelations record {|
-    *QuizOptionalized;
-    QuestionOptionalized[] questions?;
-    QuizTakenOptionalized quiztaken?;
-|};
-
-public type QuizTargetType typedesc<QuizWithRelations>;
-
-public type QuizInsert record {|
-|};
-
-public type QuizUpdate record {|
-|};
-
-public type QuizTaken record {|
-    readonly string studentId;
-    readonly string quizId;
-    int quizQuizId;
-    int score;
-    string submisstedDate;
-|};
-
-public type QuizTakenOptionalized record {|
-    string studentId?;
-    string quizId?;
-    int quizQuizId?;
-    int score?;
-    string submisstedDate?;
-|};
-
-public type QuizTakenWithRelations record {|
-    *QuizTakenOptionalized;
-    QuizOptionalized quiz?;
-|};
-
-public type QuizTakenTargetType typedesc<QuizTakenWithRelations>;
-
-public type QuizTakenInsert QuizTaken;
-
-public type QuizTakenUpdate record {|
-    int quizQuizId?;
-    int score?;
-    string submisstedDate?;
-|};
-
 public type Student record {|
     readonly int studentId;
     string firstName;
@@ -388,6 +262,7 @@ public type Student record {|
     string email;
 
     int credentialsCredId;
+
 |};
 
 public type StudentOptionalized record {|
@@ -400,10 +275,10 @@ public type StudentOptionalized record {|
 
 public type StudentWithRelations record {|
     *StudentOptionalized;
-    SessionOptionalized[] sessions?;
     TutorNStudentOptionalized[] tutors?;
     ReviewOptionalized review?;
     AuthCredentialsOptionalized credentials?;
+    BookingOptionalized[] booking?;
 |};
 
 public type StudentTargetType typedesc<StudentWithRelations>;
@@ -450,5 +325,46 @@ public type TutorNStudentInsert record {|
 public type TutorNStudentUpdate record {|
     int tutorTutorId?;
     int studentStudentId?;
+|};
+
+public type Document record {|
+    readonly int id;
+    string filepath;
+    string title;
+    string description;
+    Category category;
+    int tutorTutorId;
+|};
+
+public type DocumentOptionalized record {|
+    int id?;
+    string filepath?;
+    string title?;
+    string description?;
+    Category category?;
+    int tutorTutorId?;
+|};
+
+public type DocumentWithRelations record {|
+    *DocumentOptionalized;
+    TutorOptionalized tutor?;
+|};
+
+public type DocumentTargetType typedesc<DocumentWithRelations>;
+
+public type DocumentInsert record {|
+    string filepath;
+    string title;
+    string description;
+    Category category;
+    int tutorTutorId;
+|};
+
+public type DocumentUpdate record {|
+    string filepath?;
+    string title?;
+    string description?;
+    Category category?;
+    int tutorTutorId?;
 |};
 

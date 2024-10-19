@@ -5,15 +5,11 @@
 
 DROP TABLE IF EXISTS `TutorNStudent`;
 DROP TABLE IF EXISTS `Review`;
-DROP TABLE IF EXISTS `Payment`;
+DROP TABLE IF EXISTS `Document`;
 DROP TABLE IF EXISTS `Session`;
 DROP TABLE IF EXISTS `Tutor`;
-
-DROP TABLE IF EXISTS `QuizTaken`;
-DROP TABLE IF EXISTS `Option`;
-DROP TABLE IF EXISTS `Question`;
+DROP TABLE IF EXISTS `Booking`;
 DROP TABLE IF EXISTS `Student`;
-DROP TABLE IF EXISTS `Quiz`;
 DROP TABLE IF EXISTS `AuthCredentials`;
 DROP TABLE IF EXISTS `Subject`;
 
@@ -32,11 +28,6 @@ CREATE TABLE `AuthCredentials` (
 	PRIMARY KEY(`credId`)
 );
 
-CREATE TABLE `Quiz` (
-	`quizId` INT AUTO_INCREMENT,
-	PRIMARY KEY(`quizId`)
-);
-
 CREATE TABLE `Student` (
 	`studentId` INT AUTO_INCREMENT,
 	`firstName` VARCHAR(191) NOT NULL,
@@ -47,34 +38,14 @@ CREATE TABLE `Student` (
 	PRIMARY KEY(`studentId`)
 );
 
-CREATE TABLE `Question` (
-	`questionId` INT AUTO_INCREMENT,
-	`questionText` VARCHAR(191) NOT NULL,
-	`quizQuizId` INT NOT NULL,
-	FOREIGN KEY(`quizQuizId`) REFERENCES `Quiz`(`quizId`),
-	PRIMARY KEY(`questionId`)
+CREATE TABLE `Booking` (
+	`bookingId` INT AUTO_INCREMENT,
+	`sessionSessionId` INT UNIQUE NOT NULL,
+	FOREIGN KEY(`sessionSessionId`) REFERENCES `Session`(`sessionId`),
+	`studentStudentId` INT NOT NULL,
+	FOREIGN KEY(`studentStudentId`) REFERENCES `Student`(`studentId`),
+	PRIMARY KEY(`bookingId`)
 );
-
-CREATE TABLE `Option` (
-	`optionId` INT AUTO_INCREMENT,
-	`text` VARCHAR(191) NOT NULL,
-	`isCorrect` BOOLEAN NOT NULL,
-	`questionQuestionId` INT NOT NULL,
-	FOREIGN KEY(`questionQuestionId`) REFERENCES `Question`(`questionId`),
-	PRIMARY KEY(`optionId`)
-);
-
-CREATE TABLE `QuizTaken` (
-	`studentId` VARCHAR(191) NOT NULL,
-	`quizId` VARCHAR(191) NOT NULL,
-	`score` INT NOT NULL,
-	`submisstedDate` VARCHAR(191) NOT NULL,
-	`quizQuizId` INT UNIQUE NOT NULL,
-	FOREIGN KEY(`quizQuizId`) REFERENCES `Quiz`(`quizId`),
-	PRIMARY KEY(`studentId`,`quizId`)
-);
-
-
 
 CREATE TABLE `Tutor` (
 	`tutorId` INT AUTO_INCREMENT,
@@ -92,26 +63,24 @@ CREATE TABLE `Tutor` (
 
 CREATE TABLE `Session` (
 	`sessionId` INT AUTO_INCREMENT,
-	`sessionTime` DATETIME NOT NULL,
-	`duration` INT NOT NULL,
-	`status` ENUM('SCHEDULED', 'CANCELLED', 'STARTED', 'ENDED') NOT NULL,
-	`isBooked` BOOLEAN NOT NULL,
+	`startingTime` DATETIME NOT NULL,
+	`endingTime` DATETIME NOT NULL,
+	`status` ENUM('SCHEDULED', 'BOOKED', 'CANCELLED', 'ENDED') NOT NULL,
+	`eventId` VARCHAR(191) NOT NULL,
 	`tutorTutorId` INT NOT NULL,
 	FOREIGN KEY(`tutorTutorId`) REFERENCES `Tutor`(`tutorId`),
-	`studentStudentId` INT NOT NULL,
-	FOREIGN KEY(`studentStudentId`) REFERENCES `Student`(`studentId`),
 	PRIMARY KEY(`sessionId`)
 );
 
-CREATE TABLE `Payment` (
-	`paymentId` INT AUTO_INCREMENT,
-	`amount` INT NOT NULL,
-	`status` ENUM('PENDING', 'PAID') NOT NULL,
-	`paymentMethod` VARCHAR(191) NOT NULL,
-	`transactionDate` VARCHAR(191) NOT NULL,
-	`sessionSessionId` INT UNIQUE NOT NULL,
-	FOREIGN KEY(`sessionSessionId`) REFERENCES `Session`(`sessionId`),
-	PRIMARY KEY(`paymentId`)
+CREATE TABLE `Document` (
+	`id` INT AUTO_INCREMENT,
+	`filepath` VARCHAR(191) NOT NULL,
+	`title` VARCHAR(191) NOT NULL,
+	`description` VARCHAR(191) NOT NULL,
+	`category` ENUM('ASTRO', 'PHYSICS', 'CHEMISTRY', 'GEOMETRY', 'ENGLISH', 'FRENCH', 'GERMAN', 'BIOLOGY') NOT NULL,
+	`tutorTutorId` INT UNIQUE NOT NULL,
+	FOREIGN KEY(`tutorTutorId`) REFERENCES `Tutor`(`tutorId`),
+	PRIMARY KEY(`id`)
 );
 
 CREATE TABLE `Review` (

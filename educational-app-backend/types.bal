@@ -24,6 +24,12 @@ public type SftpListenerConfig record {|
     decimal pollingInterval;
 |};
 
+public type UtcOffset record {|
+    int hours; 
+    int minutes;
+    decimal seconds;
+|};
+
 
 readonly service class TutorAuthInterceptor {
     *graphql:Interceptor;

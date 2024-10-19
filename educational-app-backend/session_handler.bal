@@ -1,29 +1,31 @@
 import educational_app_backend.datasource;
-import ballerina/http;
-import ballerina/persist;
-import ballerina/io;
-import ballerina/time;
-import ballerina/mime;
+
 import ballerina/ftp;
+import ballerina/http;
+import ballerina/io;
+import ballerina/mime;
+import ballerina/persist;
+import ballerina/time;
 
 ftp:ClientConfiguration ftpConfig = {
-        protocol: ftp:FTP,
-        host: "localhost",
-        port: 21,
-        auth: {credentials: {username: "one", password: "12345678"}}
+    protocol: ftp:FTP,
+    host: "localhost",
+    port: 21,
+    auth: {credentials: {username: "one", password: "12345678"}}
 };
 
-ftp:Client ftpClient = check new(ftpConfig);
+ftp:Client ftpClient = check new (ftpConfig);
 
 // Request Interceptor service class
 service class RequestInterceptor {
     *http:RequestInterceptor;
+
     resource function 'default [string... path](
             http:RequestContext ctx,
             @http:Header {name: "Authorization"} string xApiVersion)
         returns http:NotImplemented|http:NextService|error? {
-            boolean validated = true;
-            //validate the token
+        boolean validated = true;
+        //validate the token
         if !validated {
             return http:NOT_IMPLEMENTED;
         }
@@ -34,6 +36,7 @@ service class RequestInterceptor {
 // Response Interceptor service class
 service class ResponseInterceptor {
     *http:ResponseInterceptor;
+
     remote function interceptResponse(http:RequestContext ctx, http:Response res)
         returns http:NextService|error? {
         res.setHeader("x-api-version", "v2");
@@ -65,7 +68,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
     }
 
     //resource to handle book sessions
-    resource function put session_booking/[int sessionId](http:Caller caller, http:Request req) returns error?{
+    resource function put session_booking/[int sessionId](http:Caller caller, http:Request req) returns error? {
         string? stuId = req.getQueryParamValue("studentId");
         http:Response response = new;
         if (stuId == null) {
@@ -75,11 +78,13 @@ service http:InterceptableService /users on new http:Listener(9091) {
             return caller->respond(response);
         }
         int studentId = check int:fromString(stuId);
-        int[]|persist:Error booking = self.dbClient->/bookings.post([{
-            sessionSessionId: sessionId, 
-            studentStudentId : studentId
-        }]);
-        
+        int[]|persist:Error booking = self.dbClient->/bookings.post([
+            {
+                sessionSessionId: sessionId,
+                studentStudentId: studentId
+            }
+        ]);
+
         // TODO: need to set a session unique by the starting time and ending time
         if booking is persist:Error {
             if booking is persist:AlreadyExistsError {
@@ -96,14 +101,13 @@ service http:InterceptableService /users on new http:Listener(9091) {
     }
 
     //resource to handle get sessions for a given tutor at a given date
-    resource function get tutor/[int tutorId]/sessions(int year, int month, int day, int hour) returns datasource:Session[]|error {
+    resource function get tutor/[int tutorId]/sessions(int year, int month, int day) returns datasource:Session[]|error {
         stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions();
         return from datasource:Session session in sessions
             where session.tutorTutorId == tutorId &&
             session.startingTime.year == year &&
             session.startingTime.month == month &&
-            session.startingTime.day == day &&
-            session.startingTime.hour == hour
+            session.startingTime.day == day
             select session;
     }
 
@@ -136,7 +140,6 @@ service http:InterceptableService /users on new http:Listener(9091) {
 
         time:Civil newStartingTime = <time:Civil>rescheduledSession.startingTime;
         time:Civil newEndingTime = <time:Civil>rescheduledSession.endingTime;
-        
 
         // Fetch the existing session from the database
         // datasource:Session|persist:Error existingSession = self.dbClient->/sessions/[sessionId];
@@ -156,7 +159,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
         //     });
         // }
 
-        datasource:Session|persist:Error result = self.dbClient->/sessions/[sessionId].put({startingTime: newStartingTime, endingTime : newEndingTime});
+        datasource:Session|persist:Error result = self.dbClient->/sessions/[sessionId].put({startingTime: newStartingTime, endingTime: newEndingTime});
         if result is persist:Error {
             if result is persist:NotFoundError {
                 return http:NOT_FOUND;
@@ -166,8 +169,8 @@ service http:InterceptableService /users on new http:Listener(9091) {
         return http:NO_CONTENT;
     }
 
-    // //resource to handle DELETE requests for sessions on students requests
-    resource function delete students/[int id]/sessions(int year, int month, int day) returns http:InternalServerError & readonly|http:NoContent & readonly|http:NotFound & readonly {
+    //resource to handle DELETE requests for sessions by the tutors
+    resource function delete tutor/[int id]/sessions(int year, int month, int day, int hour, int minutes) returns (http:InternalServerError & readonly)|(http:NoContent & readonly)|(http:NotFound & readonly)|error {
 
         //calender event also needs to be deleted
         stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions;
@@ -176,39 +179,51 @@ service http:InterceptableService /users on new http:Listener(9091) {
             && session.startingTime.year == year
             && session.startingTime.month == month
             && session.startingTime.day == day
+            && session.startingTime.hour == hour
+            && session.startingTime.minute == minutes
             select session;
         if result is persist:Error {
             if result is persist:NotFoundError {
                 return http:NOT_FOUND;
             }
             return http:INTERNAL_SERVER_ERROR;
-        }
-        foreach datasource:Session session in result {
-            datasource:Session|persist:Error deleteResult = self.dbClient->/sessions/[session.sessionId].delete();
-            if deleteResult is persist:Error {
-                return http:INTERNAL_SERVER_ERROR;
+        } else {
+            foreach datasource:Session session in result {
+                string? eventId = session.eventId;
+                if eventId != "" && eventId != () {
+                    _ = check deleteEvent(eventId);
+                    datasource:Session|persist:Error cancelledSession = self.dbClient->/sessions/[session.sessionId].put({eventId: session.eventId, status: datasource:CANCELLED});
+                    if cancelledSession is persist:Error {
+                        return http:INTERNAL_SERVER_ERROR;
+                    }
+                } else {
+                    datasource:Session|persist:Error deleteSession = self.dbClient->/sessions/[session.sessionId].delete();
+                    if deleteSession is persist:Error {
+                        return http:INTERNAL_SERVER_ERROR;
+                    }
+                }
             }
         }
         return http:NO_CONTENT;
     }
 
-    resource function post uploadFile(http:Caller caller, http:Request req) returns error?{
-            mime:Entity[] parts = check req.getBodyParts();
-            // Assume the first part is the file part
-            if parts.length() > 0 {
-                mime:Entity filePart = parts[0];
-                string? fileName = filePart.getContentDisposition().toString();
-                if fileName is () {
-                    fileName = "uploaded_file.txt"; // Default filename if none provided
-                } else {
+    resource function post uploadFile(http:Caller caller, http:Request req) returns error? {
+        mime:Entity[] parts = check req.getBodyParts();
+        // Assume the first part is the file part
+        if parts.length() > 0 {
+            mime:Entity filePart = parts[0];
+            string? fileName = filePart.getContentDisposition().toString();
+            if fileName is () {
+                fileName = "uploaded_file.txt"; // Default filename if none provided
+            } else {
                 stream<byte[], io:Error?> byteStream = check filePart.getByteStream(5);
                 stream<io:Block, io:Error?> filter = byteStream.'map(value => value.cloneReadOnly());
                 _ = check ftpClient->put("/home/in/" + fileName + ".pdf", filter);
                 check caller->respond("File uploaded successfully as " + fileName);
-                }
-            } else {
-                check caller->respond("No file found in the request.");
             }
+        } else {
+            check caller->respond("No file found in the request.");
+        }
     }
 }
 

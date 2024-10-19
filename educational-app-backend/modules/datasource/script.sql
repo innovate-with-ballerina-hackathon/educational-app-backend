@@ -66,7 +66,9 @@ CREATE TABLE `Session` (
 	`startingTime` DATETIME NOT NULL,
 	`endingTime` DATETIME NOT NULL,
 	`status` ENUM('SCHEDULED', 'BOOKED', 'CANCELLED', 'ENDED') NOT NULL,
-	`eventId` VARCHAR(191) NOT NULL,
+	`eventId` VARCHAR(191),
+	`timeZoneOffset` VARCHAR(191) NOT NULL,
+	`utcOffset` VARCHAR(191) NOT NULL,
 	`tutorTutorId` INT NOT NULL,
 	FOREIGN KEY(`tutorTutorId`) REFERENCES `Tutor`(`tutorId`),
 	PRIMARY KEY(`sessionId`)

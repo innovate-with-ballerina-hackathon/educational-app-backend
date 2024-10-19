@@ -29,8 +29,10 @@ public type Session record {|
     time:Civil startingTime;
     time:Civil endingTime;
     SessionStatus status;
-    string eventId;
+    string? eventId;
 
+    string timeZoneOffset;
+    string utcOffset;
 |};
 
 public type SessionOptionalized record {|
@@ -39,7 +41,9 @@ public type SessionOptionalized record {|
     time:Civil startingTime?;
     time:Civil endingTime?;
     SessionStatus status?;
-    string eventId?;
+    string? eventId?;
+    string timeZoneOffset?;
+    string utcOffset?;
 |};
 
 public type SessionWithRelations record {|
@@ -55,7 +59,9 @@ public type SessionInsert record {|
     time:Civil startingTime;
     time:Civil endingTime;
     SessionStatus status;
-    string eventId;
+    string? eventId;
+    string timeZoneOffset;
+    string utcOffset;
 |};
 
 public type SessionUpdate record {|
@@ -63,7 +69,9 @@ public type SessionUpdate record {|
     time:Civil startingTime?;
     time:Civil endingTime?;
     SessionStatus status?;
-    string eventId?;
+    string? eventId?;
+    string timeZoneOffset?;
+    string utcOffset?;
 |};
 
 public type Booking record {|

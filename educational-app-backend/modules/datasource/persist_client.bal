@@ -10,18 +10,15 @@ import ballerinax/mysql;
 import ballerinax/mysql.driver as _;
 import ballerinax/persist.sql as psql;
 
-const PAYMENT = "payments";
 const SESSION = "sessions";
+const BOOKING = "bookings";
 const REVIEW = "reviews";
 const AUTH_CREDENTIALS = "authcredentials";
 const TUTOR = "tutors";
 const SUBJECT = "subjects";
-const OPTION = "options";
-const QUESTION = "questions";
-const QUIZ = "quizzes";
-const QUIZ_TAKEN = "quiztakens";
 const STUDENT = "students";
 const TUTOR_N_STUDENT = "tutornstudents";
+const DOCUMENT = "documents";
 
 public isolated client class Client {
     *persist:AbstractPersistClient;
@@ -31,38 +28,16 @@ public isolated client class Client {
     private final map<psql:SQLClient> persistClients;
 
     private final record {|psql:SQLMetadata...;|} & readonly metadata = {
-        [PAYMENT]: {
-            entityName: "Payment",
-            tableName: "Payment",
-            fieldMetadata: {
-                paymentId: {columnName: "paymentId", dbGenerated: true},
-                amount: {columnName: "amount"},
-                status: {columnName: "status"},
-                paymentMethod: {columnName: "paymentMethod"},
-                transactionDate: {columnName: "transactionDate"},
-                sessionSessionId: {columnName: "sessionSessionId"},
-                "session.sessionId": {relation: {entityName: "session", refField: "sessionId"}},
-                "session.tutorTutorId": {relation: {entityName: "session", refField: "tutorTutorId"}},
-                "session.studentStudentId": {relation: {entityName: "session", refField: "studentStudentId"}},
-                "session.sessionTime": {relation: {entityName: "session", refField: "sessionTime"}},
-                "session.duration": {relation: {entityName: "session", refField: "duration"}},
-                "session.status": {relation: {entityName: "session", refField: "status"}},
-                "session.isBooked": {relation: {entityName: "session", refField: "isBooked"}}
-            },
-            keyFields: ["paymentId"],
-            joinMetadata: {session: {entity: Session, fieldName: "session", refTable: "Session", refColumns: ["sessionId"], joinColumns: ["sessionSessionId"], 'type: psql:ONE_TO_ONE}}
-        },
         [SESSION]: {
             entityName: "Session",
             tableName: "Session",
             fieldMetadata: {
                 sessionId: {columnName: "sessionId", dbGenerated: true},
                 tutorTutorId: {columnName: "tutorTutorId"},
-                studentStudentId: {columnName: "studentStudentId"},
-                sessionTime: {columnName: "sessionTime"},
-                duration: {columnName: "duration"},
+                startingTime: {columnName: "startingTime"},
+                endingTime: {columnName: "endingTime"},
                 status: {columnName: "status"},
-                isBooked: {columnName: "isBooked"},
+                eventId: {columnName: "eventId"},
                 "tutor.tutorId": {relation: {entityName: "tutor", refField: "tutorId"}},
                 "tutor.firstName": {relation: {entityName: "tutor", refField: "firstName"}},
                 "tutor.lastName": {relation: {entityName: "tutor", refField: "lastName"}},
@@ -71,23 +46,39 @@ public isolated client class Client {
                 "tutor.subjectSubjectId": {relation: {entityName: "tutor", refField: "subjectSubjectId"}},
                 "tutor.experienceYears": {relation: {entityName: "tutor", refField: "experienceYears"}},
                 "tutor.price": {relation: {entityName: "tutor", refField: "price"}},
-                "student.studentId": {relation: {entityName: "student", refField: "studentId"}},
-                "student.firstName": {relation: {entityName: "student", refField: "firstName"}},
-                "student.lastName": {relation: {entityName: "student", refField: "lastName"}},
-                "student.email": {relation: {entityName: "student", refField: "email"}},
-                "student.credentialsCredId": {relation: {entityName: "student", refField: "credentialsCredId"}},
-                "payment.paymentId": {relation: {entityName: "payment", refField: "paymentId"}},
-                "payment.amount": {relation: {entityName: "payment", refField: "amount"}},
-                "payment.status": {relation: {entityName: "payment", refField: "status"}},
-                "payment.paymentMethod": {relation: {entityName: "payment", refField: "paymentMethod"}},
-                "payment.transactionDate": {relation: {entityName: "payment", refField: "transactionDate"}},
-                "payment.sessionSessionId": {relation: {entityName: "payment", refField: "sessionSessionId"}}
+                "booking.bookingId": {relation: {entityName: "booking", refField: "bookingId"}},
+                "booking.sessionSessionId": {relation: {entityName: "booking", refField: "sessionSessionId"}},
+                "booking.studentStudentId": {relation: {entityName: "booking", refField: "studentStudentId"}}
             },
             keyFields: ["sessionId"],
             joinMetadata: {
                 tutor: {entity: Tutor, fieldName: "tutor", refTable: "Tutor", refColumns: ["tutorId"], joinColumns: ["tutorTutorId"], 'type: psql:ONE_TO_MANY},
-                student: {entity: Student, fieldName: "student", refTable: "Student", refColumns: ["studentId"], joinColumns: ["studentStudentId"], 'type: psql:ONE_TO_MANY},
-                payment: {entity: Payment, fieldName: "payment", refTable: "Payment", refColumns: ["sessionSessionId"], joinColumns: ["sessionId"], 'type: psql:ONE_TO_ONE}
+                booking: {entity: Booking, fieldName: "booking", refTable: "Booking", refColumns: ["sessionSessionId"], joinColumns: ["sessionId"], 'type: psql:ONE_TO_ONE}
+            }
+        },
+        [BOOKING]: {
+            entityName: "Booking",
+            tableName: "Booking",
+            fieldMetadata: {
+                bookingId: {columnName: "bookingId", dbGenerated: true},
+                sessionSessionId: {columnName: "sessionSessionId"},
+                studentStudentId: {columnName: "studentStudentId"},
+                "session.sessionId": {relation: {entityName: "session", refField: "sessionId"}},
+                "session.tutorTutorId": {relation: {entityName: "session", refField: "tutorTutorId"}},
+                "session.startingTime": {relation: {entityName: "session", refField: "startingTime"}},
+                "session.endingTime": {relation: {entityName: "session", refField: "endingTime"}},
+                "session.status": {relation: {entityName: "session", refField: "status"}},
+                "session.eventId": {relation: {entityName: "session", refField: "eventId"}},
+                "student.studentId": {relation: {entityName: "student", refField: "studentId"}},
+                "student.firstName": {relation: {entityName: "student", refField: "firstName"}},
+                "student.lastName": {relation: {entityName: "student", refField: "lastName"}},
+                "student.email": {relation: {entityName: "student", refField: "email"}},
+                "student.credentialsCredId": {relation: {entityName: "student", refField: "credentialsCredId"}}
+            },
+            keyFields: ["bookingId"],
+            joinMetadata: {
+                session: {entity: Session, fieldName: "session", refTable: "Session", refColumns: ["sessionId"], joinColumns: ["sessionSessionId"], 'type: psql:ONE_TO_ONE},
+                student: {entity: Student, fieldName: "student", refTable: "Student", refColumns: ["studentId"], joinColumns: ["studentStudentId"], 'type: psql:ONE_TO_MANY}
             }
         },
         [REVIEW]: {
@@ -165,11 +156,10 @@ public isolated client class Client {
                 "students[].studentStudentId": {relation: {entityName: "students", refField: "studentStudentId"}},
                 "sessions[].sessionId": {relation: {entityName: "sessions", refField: "sessionId"}},
                 "sessions[].tutorTutorId": {relation: {entityName: "sessions", refField: "tutorTutorId"}},
-                "sessions[].studentStudentId": {relation: {entityName: "sessions", refField: "studentStudentId"}},
-                "sessions[].sessionTime": {relation: {entityName: "sessions", refField: "sessionTime"}},
-                "sessions[].duration": {relation: {entityName: "sessions", refField: "duration"}},
+                "sessions[].startingTime": {relation: {entityName: "sessions", refField: "startingTime"}},
+                "sessions[].endingTime": {relation: {entityName: "sessions", refField: "endingTime"}},
                 "sessions[].status": {relation: {entityName: "sessions", refField: "status"}},
-                "sessions[].isBooked": {relation: {entityName: "sessions", refField: "isBooked"}},
+                "sessions[].eventId": {relation: {entityName: "sessions", refField: "eventId"}},
                 "reviews[].reviewId": {relation: {entityName: "reviews", refField: "reviewId"}},
                 "reviews[].review": {relation: {entityName: "reviews", refField: "review"}},
                 "reviews[].starRating": {relation: {entityName: "reviews", refField: "starRating"}},
@@ -181,7 +171,13 @@ public isolated client class Client {
                 "credentials.refreshToken": {relation: {entityName: "credentials", refField: "refreshToken"}},
                 "credentials.idToken": {relation: {entityName: "credentials", refField: "idToken"}},
                 "subject.subjectId": {relation: {entityName: "subject", refField: "subjectId"}},
-                "subject.name": {relation: {entityName: "subject", refField: "name"}}
+                "subject.name": {relation: {entityName: "subject", refField: "name"}},
+                "document.id": {relation: {entityName: "document", refField: "id"}},
+                "document.filepath": {relation: {entityName: "document", refField: "filepath"}},
+                "document.title": {relation: {entityName: "document", refField: "title"}},
+                "document.description": {relation: {entityName: "document", refField: "description"}},
+                "document.category": {relation: {entityName: "document", refField: "category"}},
+                "document.tutorTutorId": {relation: {entityName: "document", refField: "tutorTutorId"}}
             },
             keyFields: ["tutorId"],
             joinMetadata: {
@@ -189,7 +185,8 @@ public isolated client class Client {
                 sessions: {entity: Session, fieldName: "sessions", refTable: "Session", refColumns: ["tutorTutorId"], joinColumns: ["tutorId"], 'type: psql:MANY_TO_ONE},
                 reviews: {entity: Review, fieldName: "reviews", refTable: "Review", refColumns: ["tutorTutorId"], joinColumns: ["tutorId"], 'type: psql:MANY_TO_ONE},
                 credentials: {entity: AuthCredentials, fieldName: "credentials", refTable: "AuthCredentials", refColumns: ["credId"], joinColumns: ["credentialsCredId"], 'type: psql:ONE_TO_ONE},
-                subject: {entity: Subject, fieldName: "subject", refTable: "Subject", refColumns: ["subjectId"], joinColumns: ["subjectSubjectId"], 'type: psql:ONE_TO_MANY}
+                subject: {entity: Subject, fieldName: "subject", refTable: "Subject", refColumns: ["subjectId"], joinColumns: ["subjectSubjectId"], 'type: psql:ONE_TO_MANY},
+                document: {entity: Document, fieldName: "document", refTable: "Document", refColumns: ["tutorTutorId"], joinColumns: ["tutorId"], 'type: psql:ONE_TO_ONE}
             }
         },
         [SUBJECT]: {
@@ -210,74 +207,6 @@ public isolated client class Client {
             keyFields: ["subjectId"],
             joinMetadata: {tutors: {entity: Tutor, fieldName: "tutors", refTable: "Tutor", refColumns: ["subjectSubjectId"], joinColumns: ["subjectId"], 'type: psql:MANY_TO_ONE}}
         },
-        [OPTION]: {
-            entityName: "Option",
-            tableName: "Option",
-            fieldMetadata: {
-                optionId: {columnName: "optionId", dbGenerated: true},
-                text: {columnName: "text"},
-                isCorrect: {columnName: "isCorrect"},
-                questionQuestionId: {columnName: "questionQuestionId"},
-                "question.questionId": {relation: {entityName: "question", refField: "questionId"}},
-                "question.questionText": {relation: {entityName: "question", refField: "questionText"}},
-                "question.quizQuizId": {relation: {entityName: "question", refField: "quizQuizId"}}
-            },
-            keyFields: ["optionId"],
-            joinMetadata: {question: {entity: Question, fieldName: "question", refTable: "Question", refColumns: ["questionId"], joinColumns: ["questionQuestionId"], 'type: psql:ONE_TO_MANY}}
-        },
-        [QUESTION]: {
-            entityName: "Question",
-            tableName: "Question",
-            fieldMetadata: {
-                questionId: {columnName: "questionId", dbGenerated: true},
-                questionText: {columnName: "questionText"},
-                quizQuizId: {columnName: "quizQuizId"},
-                "options[].optionId": {relation: {entityName: "options", refField: "optionId"}},
-                "options[].text": {relation: {entityName: "options", refField: "text"}},
-                "options[].isCorrect": {relation: {entityName: "options", refField: "isCorrect"}},
-                "options[].questionQuestionId": {relation: {entityName: "options", refField: "questionQuestionId"}},
-                "quiz.quizId": {relation: {entityName: "quiz", refField: "quizId"}}
-            },
-            keyFields: ["questionId"],
-            joinMetadata: {
-                options: {entity: Option, fieldName: "options", refTable: "Option", refColumns: ["questionQuestionId"], joinColumns: ["questionId"], 'type: psql:MANY_TO_ONE},
-                quiz: {entity: Quiz, fieldName: "quiz", refTable: "Quiz", refColumns: ["quizId"], joinColumns: ["quizQuizId"], 'type: psql:ONE_TO_MANY}
-            }
-        },
-        [QUIZ]: {
-            entityName: "Quiz",
-            tableName: "Quiz",
-            fieldMetadata: {
-                quizId: {columnName: "quizId", dbGenerated: true},
-                "questions[].questionId": {relation: {entityName: "questions", refField: "questionId"}},
-                "questions[].questionText": {relation: {entityName: "questions", refField: "questionText"}},
-                "questions[].quizQuizId": {relation: {entityName: "questions", refField: "quizQuizId"}},
-                "quiztaken.studentId": {relation: {entityName: "quiztaken", refField: "studentId"}},
-                "quiztaken.quizId": {relation: {entityName: "quiztaken", refField: "quizId"}},
-                "quiztaken.quizQuizId": {relation: {entityName: "quiztaken", refField: "quizQuizId"}},
-                "quiztaken.score": {relation: {entityName: "quiztaken", refField: "score"}},
-                "quiztaken.submisstedDate": {relation: {entityName: "quiztaken", refField: "submisstedDate"}}
-            },
-            keyFields: ["quizId"],
-            joinMetadata: {
-                questions: {entity: Question, fieldName: "questions", refTable: "Question", refColumns: ["quizQuizId"], joinColumns: ["quizId"], 'type: psql:MANY_TO_ONE},
-                quiztaken: {entity: QuizTaken, fieldName: "quiztaken", refTable: "QuizTaken", refColumns: ["quizQuizId"], joinColumns: ["quizId"], 'type: psql:ONE_TO_ONE}
-            }
-        },
-        [QUIZ_TAKEN]: {
-            entityName: "QuizTaken",
-            tableName: "QuizTaken",
-            fieldMetadata: {
-                studentId: {columnName: "studentId"},
-                quizId: {columnName: "quizId"},
-                quizQuizId: {columnName: "quizQuizId"},
-                score: {columnName: "score"},
-                submisstedDate: {columnName: "submisstedDate"},
-                "quiz.quizId": {relation: {entityName: "quiz", refField: "quizId"}}
-            },
-            keyFields: ["studentId", "quizId"],
-            joinMetadata: {quiz: {entity: Quiz, fieldName: "quiz", refTable: "Quiz", refColumns: ["quizId"], joinColumns: ["quizQuizId"], 'type: psql:ONE_TO_ONE}}
-        },
         [STUDENT]: {
             entityName: "Student",
             tableName: "Student",
@@ -287,13 +216,6 @@ public isolated client class Client {
                 lastName: {columnName: "lastName"},
                 email: {columnName: "email"},
                 credentialsCredId: {columnName: "credentialsCredId"},
-                "sessions[].sessionId": {relation: {entityName: "sessions", refField: "sessionId"}},
-                "sessions[].tutorTutorId": {relation: {entityName: "sessions", refField: "tutorTutorId"}},
-                "sessions[].studentStudentId": {relation: {entityName: "sessions", refField: "studentStudentId"}},
-                "sessions[].sessionTime": {relation: {entityName: "sessions", refField: "sessionTime"}},
-                "sessions[].duration": {relation: {entityName: "sessions", refField: "duration"}},
-                "sessions[].status": {relation: {entityName: "sessions", refField: "status"}},
-                "sessions[].isBooked": {relation: {entityName: "sessions", refField: "isBooked"}},
                 "tutors[].id": {relation: {entityName: "tutors", refField: "id"}},
                 "tutors[].tutorTutorId": {relation: {entityName: "tutors", refField: "tutorTutorId"}},
                 "tutors[].studentStudentId": {relation: {entityName: "tutors", refField: "studentStudentId"}},
@@ -306,14 +228,17 @@ public isolated client class Client {
                 "credentials.userRole": {relation: {entityName: "credentials", refField: "userRole"}},
                 "credentials.accessToken": {relation: {entityName: "credentials", refField: "accessToken"}},
                 "credentials.refreshToken": {relation: {entityName: "credentials", refField: "refreshToken"}},
-                "credentials.idToken": {relation: {entityName: "credentials", refField: "idToken"}}
+                "credentials.idToken": {relation: {entityName: "credentials", refField: "idToken"}},
+                "booking[].bookingId": {relation: {entityName: "booking", refField: "bookingId"}},
+                "booking[].sessionSessionId": {relation: {entityName: "booking", refField: "sessionSessionId"}},
+                "booking[].studentStudentId": {relation: {entityName: "booking", refField: "studentStudentId"}}
             },
             keyFields: ["studentId"],
             joinMetadata: {
-                sessions: {entity: Session, fieldName: "sessions", refTable: "Session", refColumns: ["studentStudentId"], joinColumns: ["studentId"], 'type: psql:MANY_TO_ONE},
                 tutors: {entity: TutorNStudent, fieldName: "tutors", refTable: "TutorNStudent", refColumns: ["studentStudentId"], joinColumns: ["studentId"], 'type: psql:MANY_TO_ONE},
                 review: {entity: Review, fieldName: "review", refTable: "Review", refColumns: ["studentStudentId"], joinColumns: ["studentId"], 'type: psql:ONE_TO_ONE},
-                credentials: {entity: AuthCredentials, fieldName: "credentials", refTable: "AuthCredentials", refColumns: ["credId"], joinColumns: ["credentialsCredId"], 'type: psql:ONE_TO_ONE}
+                credentials: {entity: AuthCredentials, fieldName: "credentials", refTable: "AuthCredentials", refColumns: ["credId"], joinColumns: ["credentialsCredId"], 'type: psql:ONE_TO_ONE},
+                booking: {entity: Booking, fieldName: "booking", refTable: "Booking", refColumns: ["studentStudentId"], joinColumns: ["studentId"], 'type: psql:MANY_TO_ONE}
             }
         },
         [TUTOR_N_STUDENT]: {
@@ -342,6 +267,28 @@ public isolated client class Client {
                 tutor: {entity: Tutor, fieldName: "tutor", refTable: "Tutor", refColumns: ["tutorId"], joinColumns: ["tutorTutorId"], 'type: psql:ONE_TO_MANY},
                 student: {entity: Student, fieldName: "student", refTable: "Student", refColumns: ["studentId"], joinColumns: ["studentStudentId"], 'type: psql:ONE_TO_MANY}
             }
+        },
+        [DOCUMENT]: {
+            entityName: "Document",
+            tableName: "Document",
+            fieldMetadata: {
+                id: {columnName: "id", dbGenerated: true},
+                filepath: {columnName: "filepath"},
+                title: {columnName: "title"},
+                description: {columnName: "description"},
+                category: {columnName: "category"},
+                tutorTutorId: {columnName: "tutorTutorId"},
+                "tutor.tutorId": {relation: {entityName: "tutor", refField: "tutorId"}},
+                "tutor.firstName": {relation: {entityName: "tutor", refField: "firstName"}},
+                "tutor.lastName": {relation: {entityName: "tutor", refField: "lastName"}},
+                "tutor.email": {relation: {entityName: "tutor", refField: "email"}},
+                "tutor.credentialsCredId": {relation: {entityName: "tutor", refField: "credentialsCredId"}},
+                "tutor.subjectSubjectId": {relation: {entityName: "tutor", refField: "subjectSubjectId"}},
+                "tutor.experienceYears": {relation: {entityName: "tutor", refField: "experienceYears"}},
+                "tutor.price": {relation: {entityName: "tutor", refField: "price"}}
+            },
+            keyFields: ["id"],
+            joinMetadata: {tutor: {entity: Tutor, fieldName: "tutor", refTable: "Tutor", refColumns: ["tutorId"], joinColumns: ["tutorTutorId"], 'type: psql:ONE_TO_ONE}}
         }
     };
 
@@ -352,59 +299,16 @@ public isolated client class Client {
         }
         self.dbClient = dbClient;
         self.persistClients = {
-            [PAYMENT]: check new (dbClient, self.metadata.get(PAYMENT), psql:MYSQL_SPECIFICS),
             [SESSION]: check new (dbClient, self.metadata.get(SESSION), psql:MYSQL_SPECIFICS),
+            [BOOKING]: check new (dbClient, self.metadata.get(BOOKING), psql:MYSQL_SPECIFICS),
             [REVIEW]: check new (dbClient, self.metadata.get(REVIEW), psql:MYSQL_SPECIFICS),
             [AUTH_CREDENTIALS]: check new (dbClient, self.metadata.get(AUTH_CREDENTIALS), psql:MYSQL_SPECIFICS),
             [TUTOR]: check new (dbClient, self.metadata.get(TUTOR), psql:MYSQL_SPECIFICS),
             [SUBJECT]: check new (dbClient, self.metadata.get(SUBJECT), psql:MYSQL_SPECIFICS),
-            [OPTION]: check new (dbClient, self.metadata.get(OPTION), psql:MYSQL_SPECIFICS),
-            [QUESTION]: check new (dbClient, self.metadata.get(QUESTION), psql:MYSQL_SPECIFICS),
-            [QUIZ]: check new (dbClient, self.metadata.get(QUIZ), psql:MYSQL_SPECIFICS),
-            [QUIZ_TAKEN]: check new (dbClient, self.metadata.get(QUIZ_TAKEN), psql:MYSQL_SPECIFICS),
             [STUDENT]: check new (dbClient, self.metadata.get(STUDENT), psql:MYSQL_SPECIFICS),
-            [TUTOR_N_STUDENT]: check new (dbClient, self.metadata.get(TUTOR_N_STUDENT), psql:MYSQL_SPECIFICS)
+            [TUTOR_N_STUDENT]: check new (dbClient, self.metadata.get(TUTOR_N_STUDENT), psql:MYSQL_SPECIFICS),
+            [DOCUMENT]: check new (dbClient, self.metadata.get(DOCUMENT), psql:MYSQL_SPECIFICS)
         };
-    }
-
-    isolated resource function get payments(PaymentTargetType targetType = <>, sql:ParameterizedQuery whereClause = ``, sql:ParameterizedQuery orderByClause = ``, sql:ParameterizedQuery limitClause = ``, sql:ParameterizedQuery groupByClause = ``) returns stream<targetType, persist:Error?> = @java:Method {
-        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
-        name: "query"
-    } external;
-
-    isolated resource function get payments/[int paymentId](PaymentTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
-        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
-        name: "queryOne"
-    } external;
-
-    isolated resource function post payments(PaymentInsert[] data) returns int[]|persist:Error {
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(PAYMENT);
-        }
-        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
-        return from sql:ExecutionResult inserted in result
-            where inserted.lastInsertId != ()
-            select <int>inserted.lastInsertId;
-    }
-
-    isolated resource function put payments/[int paymentId](PaymentUpdate value) returns Payment|persist:Error {
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(PAYMENT);
-        }
-        _ = check sqlClient.runUpdateQuery(paymentId, value);
-        return self->/payments/[paymentId].get();
-    }
-
-    isolated resource function delete payments/[int paymentId]() returns Payment|persist:Error {
-        Payment result = check self->/payments/[paymentId].get();
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(PAYMENT);
-        }
-        _ = check sqlClient.runDeleteQuery(paymentId);
-        return result;
     }
 
     isolated resource function get sessions(SessionTargetType targetType = <>, sql:ParameterizedQuery whereClause = ``, sql:ParameterizedQuery orderByClause = ``, sql:ParameterizedQuery limitClause = ``, sql:ParameterizedQuery groupByClause = ``) returns stream<targetType, persist:Error?> = @java:Method {
@@ -444,6 +348,46 @@ public isolated client class Client {
             sqlClient = self.persistClients.get(SESSION);
         }
         _ = check sqlClient.runDeleteQuery(sessionId);
+        return result;
+    }
+
+    isolated resource function get bookings(BookingTargetType targetType = <>, sql:ParameterizedQuery whereClause = ``, sql:ParameterizedQuery orderByClause = ``, sql:ParameterizedQuery limitClause = ``, sql:ParameterizedQuery groupByClause = ``) returns stream<targetType, persist:Error?> = @java:Method {
+        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
+        name: "query"
+    } external;
+
+    isolated resource function get bookings/[int bookingId](BookingTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
+        name: "queryOne"
+    } external;
+
+    isolated resource function post bookings(BookingInsert[] data) returns int[]|persist:Error {
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(BOOKING);
+        }
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
+    }
+
+    isolated resource function put bookings/[int bookingId](BookingUpdate value) returns Booking|persist:Error {
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(BOOKING);
+        }
+        _ = check sqlClient.runUpdateQuery(bookingId, value);
+        return self->/bookings/[bookingId].get();
+    }
+
+    isolated resource function delete bookings/[int bookingId]() returns Booking|persist:Error {
+        Booking result = check self->/bookings/[bookingId].get();
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(BOOKING);
+        }
+        _ = check sqlClient.runDeleteQuery(bookingId);
         return result;
     }
 
@@ -607,165 +551,6 @@ public isolated client class Client {
         return result;
     }
 
-    isolated resource function get options(OptionTargetType targetType = <>, sql:ParameterizedQuery whereClause = ``, sql:ParameterizedQuery orderByClause = ``, sql:ParameterizedQuery limitClause = ``, sql:ParameterizedQuery groupByClause = ``) returns stream<targetType, persist:Error?> = @java:Method {
-        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
-        name: "query"
-    } external;
-
-    isolated resource function get options/[int optionId](OptionTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
-        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
-        name: "queryOne"
-    } external;
-
-    isolated resource function post options(OptionInsert[] data) returns int[]|persist:Error {
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(OPTION);
-        }
-        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
-        return from sql:ExecutionResult inserted in result
-            where inserted.lastInsertId != ()
-            select <int>inserted.lastInsertId;
-    }
-
-    isolated resource function put options/[int optionId](OptionUpdate value) returns Option|persist:Error {
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(OPTION);
-        }
-        _ = check sqlClient.runUpdateQuery(optionId, value);
-        return self->/options/[optionId].get();
-    }
-
-    isolated resource function delete options/[int optionId]() returns Option|persist:Error {
-        Option result = check self->/options/[optionId].get();
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(OPTION);
-        }
-        _ = check sqlClient.runDeleteQuery(optionId);
-        return result;
-    }
-
-    isolated resource function get questions(QuestionTargetType targetType = <>, sql:ParameterizedQuery whereClause = ``, sql:ParameterizedQuery orderByClause = ``, sql:ParameterizedQuery limitClause = ``, sql:ParameterizedQuery groupByClause = ``) returns stream<targetType, persist:Error?> = @java:Method {
-        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
-        name: "query"
-    } external;
-
-    isolated resource function get questions/[int questionId](QuestionTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
-        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
-        name: "queryOne"
-    } external;
-
-    isolated resource function post questions(QuestionInsert[] data) returns int[]|persist:Error {
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(QUESTION);
-        }
-        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
-        return from sql:ExecutionResult inserted in result
-            where inserted.lastInsertId != ()
-            select <int>inserted.lastInsertId;
-    }
-
-    isolated resource function put questions/[int questionId](QuestionUpdate value) returns Question|persist:Error {
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(QUESTION);
-        }
-        _ = check sqlClient.runUpdateQuery(questionId, value);
-        return self->/questions/[questionId].get();
-    }
-
-    isolated resource function delete questions/[int questionId]() returns Question|persist:Error {
-        Question result = check self->/questions/[questionId].get();
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(QUESTION);
-        }
-        _ = check sqlClient.runDeleteQuery(questionId);
-        return result;
-    }
-
-    isolated resource function get quizzes(QuizTargetType targetType = <>, sql:ParameterizedQuery whereClause = ``, sql:ParameterizedQuery orderByClause = ``, sql:ParameterizedQuery limitClause = ``, sql:ParameterizedQuery groupByClause = ``) returns stream<targetType, persist:Error?> = @java:Method {
-        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
-        name: "query"
-    } external;
-
-    isolated resource function get quizzes/[int quizId](QuizTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
-        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
-        name: "queryOne"
-    } external;
-
-    isolated resource function post quizzes(QuizInsert[] data) returns int[]|persist:Error {
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(QUIZ);
-        }
-        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
-        return from sql:ExecutionResult inserted in result
-            where inserted.lastInsertId != ()
-            select <int>inserted.lastInsertId;
-    }
-
-    isolated resource function put quizzes/[int quizId](QuizUpdate value) returns Quiz|persist:Error {
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(QUIZ);
-        }
-        _ = check sqlClient.runUpdateQuery(quizId, value);
-        return self->/quizzes/[quizId].get();
-    }
-
-    isolated resource function delete quizzes/[int quizId]() returns Quiz|persist:Error {
-        Quiz result = check self->/quizzes/[quizId].get();
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(QUIZ);
-        }
-        _ = check sqlClient.runDeleteQuery(quizId);
-        return result;
-    }
-
-    isolated resource function get quiztakens(QuizTakenTargetType targetType = <>, sql:ParameterizedQuery whereClause = ``, sql:ParameterizedQuery orderByClause = ``, sql:ParameterizedQuery limitClause = ``, sql:ParameterizedQuery groupByClause = ``) returns stream<targetType, persist:Error?> = @java:Method {
-        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
-        name: "query"
-    } external;
-
-    isolated resource function get quiztakens/[string studentId]/[string quizId](QuizTakenTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
-        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
-        name: "queryOne"
-    } external;
-
-    isolated resource function post quiztakens(QuizTakenInsert[] data) returns [string, string][]|persist:Error {
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(QUIZ_TAKEN);
-        }
-        _ = check sqlClient.runBatchInsertQuery(data);
-        return from QuizTakenInsert inserted in data
-            select [inserted.studentId, inserted.quizId];
-    }
-
-    isolated resource function put quiztakens/[string studentId]/[string quizId](QuizTakenUpdate value) returns QuizTaken|persist:Error {
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(QUIZ_TAKEN);
-        }
-        _ = check sqlClient.runUpdateQuery({"studentId": studentId, "quizId": quizId}, value);
-        return self->/quiztakens/[studentId]/[quizId].get();
-    }
-
-    isolated resource function delete quiztakens/[string studentId]/[string quizId]() returns QuizTaken|persist:Error {
-        QuizTaken result = check self->/quiztakens/[studentId]/[quizId].get();
-        psql:SQLClient sqlClient;
-        lock {
-            sqlClient = self.persistClients.get(QUIZ_TAKEN);
-        }
-        _ = check sqlClient.runDeleteQuery({"studentId": studentId, "quizId": quizId});
-        return result;
-    }
-
     isolated resource function get students(StudentTargetType targetType = <>, sql:ParameterizedQuery whereClause = ``, sql:ParameterizedQuery orderByClause = ``, sql:ParameterizedQuery limitClause = ``, sql:ParameterizedQuery groupByClause = ``) returns stream<targetType, persist:Error?> = @java:Method {
         'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
         name: "query"
@@ -841,6 +626,46 @@ public isolated client class Client {
         psql:SQLClient sqlClient;
         lock {
             sqlClient = self.persistClients.get(TUTOR_N_STUDENT);
+        }
+        _ = check sqlClient.runDeleteQuery(id);
+        return result;
+    }
+
+    isolated resource function get documents(DocumentTargetType targetType = <>, sql:ParameterizedQuery whereClause = ``, sql:ParameterizedQuery orderByClause = ``, sql:ParameterizedQuery limitClause = ``, sql:ParameterizedQuery groupByClause = ``) returns stream<targetType, persist:Error?> = @java:Method {
+        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
+        name: "query"
+    } external;
+
+    isolated resource function get documents/[int id](DocumentTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
+        name: "queryOne"
+    } external;
+
+    isolated resource function post documents(DocumentInsert[] data) returns int[]|persist:Error {
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(DOCUMENT);
+        }
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
+    }
+
+    isolated resource function put documents/[int id](DocumentUpdate value) returns Document|persist:Error {
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(DOCUMENT);
+        }
+        _ = check sqlClient.runUpdateQuery(id, value);
+        return self->/documents/[id].get();
+    }
+
+    isolated resource function delete documents/[int id]() returns Document|persist:Error {
+        Document result = check self->/documents/[id].get();
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(DOCUMENT);
         }
         _ = check sqlClient.runDeleteQuery(id);
         return result;

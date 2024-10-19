@@ -14,7 +14,7 @@ service class RequestInterceptor {
     *http:RequestInterceptor;
     resource function 'default [string... path](
             http:RequestContext ctx,
-            @http:Header {name: "Autherization"} string xApiVersion)
+            @http:Header {name: "Authorization"} string xApiVersion)
         returns http:NotImplemented|http:NextService|error? {
             boolean validated = true;
             //validate the token
@@ -60,33 +60,30 @@ service http:InterceptableService /users on new http:Listener(9091) {
 
     //resource to handle book sessions
     resource function put session_booking/[int sessionId](http:Caller caller, http:Request req) returns error?{
-        string? confirmation = check req.getQueryParamValue("isBooked");
         string? stuId = check req.getQueryParamValue("studentId");
         http:Response response = new;
-        if (confirmation == null || stuId == null || confirmation == "False") {
+        if (stuId == null) {
             response.setHeader("error", "Missing required parameters.");
             string[] missingParams = [];
-            if (confirmation == null || confirmation == "False") {
-                missingParams.push("Confirmation");
-            }
-            if (stuId == null) {
-                missingParams.push("studentId");
-            }
             response.setPayload({"missingParameters": missingParams});
             return caller->respond(response);
         }
-        boolean isBooked = true;
         int studentId = check int:fromString(stuId);
-        datasource:Session|persist:Error session = self.dbClient->/sessions/[sessionId].put({isBooked: isBooked , studentStudentId: studentId});
+        int[]|persist:Error booking = self.dbClient->/bookings.post([{
+            sessionSessionId: sessionId, 
+            studentStudentId : studentId
+        }]);
+        
         // TODO: need to set a session unique by the starting time and ending time
-        if session is persist:Error {
-            if session is persist:AlreadyExistsError {
+        if booking is persist:Error {
+            if booking is persist:AlreadyExistsError {
                 return caller->respond(http:CONFLICT.toString());
             }
             return caller->respond(http:INTERNAL_SERVER_ERROR.toString());
         }
+        datasource:Session session = check self.dbClient->/sessions/[sessionId];
         datasource:Tutor tutor = check self.dbClient->/tutors/[session.tutorTutorId];
-        datasource:Student student = check self.dbClient->/students/[session.studentStudentId];
+        datasource:Student student = check self.dbClient->/students/[studentId];
         string event_id = check createEventByPost(session, tutor, student);
         return caller->respond(session);
     }
@@ -96,10 +93,10 @@ service http:InterceptableService /users on new http:Listener(9091) {
         stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions();
         return from datasource:Session session in sessions
             where session.tutorTutorId == tutorId &&
-            session.sessionTime.year == year &&
-            session.sessionTime.month == month &&
-            session.sessionTime.day == day &&
-            session.sessionTime.hour == hour
+            session.startingTime.year == year &&
+            session.startingTime.month == month &&
+            session.startingTime.day == day &&
+            session.startingTime.hour == hour
             select session;
     }
 
@@ -130,8 +127,9 @@ service http:InterceptableService /users on new http:Listener(9091) {
     // Define the resource to reschedule the session by sessionID
     resource function put sessions/[int sessionId]/reschedule(datasource:SessionUpdate rescheduledSession) returns http:InternalServerError & readonly|http:NoContent & readonly|http:NotFound & readonly|error {
 
-        time:Civil newSessionTime = <time:Civil>rescheduledSession.sessionTime;
-        int newDuration = <int>rescheduledSession.duration;
+        time:Civil newStartingTime = <time:Civil>rescheduledSession.startingTime;
+        time:Civil newEndingTime = <time:Civil>rescheduledSession.endingTime;
+        
 
         // Fetch the existing session from the database
         // datasource:Session|persist:Error existingSession = self.dbClient->/sessions/[sessionId];
@@ -151,7 +149,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
         //     });
         // }
 
-        datasource:Session|persist:Error result = self.dbClient->/sessions/[sessionId].put({sessionTime: newSessionTime, duration: newDuration});
+        datasource:Session|persist:Error result = self.dbClient->/sessions/[sessionId].put({startingTime: newStartingTime, endingTime : newEndingTime});
         if result is persist:Error {
             if result is persist:NotFoundError {
                 return http:NOT_FOUND;
@@ -168,9 +166,9 @@ service http:InterceptableService /users on new http:Listener(9091) {
         stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions;
         datasource:Session[]|persist:Error result = from datasource:Session session in sessions
             where session.sessionId == id
-            && session.sessionTime.year == year
-            && session.sessionTime.month == month
-            && session.sessionTime.day == day
+            && session.startingTime.year == year
+            && session.startingTime.month == month
+            && session.startingTime.day == day
             select session;
         if result is persist:Error {
             if result is persist:NotFoundError {

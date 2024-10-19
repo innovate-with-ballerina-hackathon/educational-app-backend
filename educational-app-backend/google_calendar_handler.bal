@@ -23,7 +23,7 @@ public function main() returns error? {
     calendarId = <string>calendarResult.id;
 }
 
-function createEvent(string calendarId, datasource:Session session, gcalendar:EventAttendee[] eventAttendees, string subject, string tutorsFirstName) returns gcalendar:Event|error {
+function createEvent(datasource:Session session, gcalendar:EventAttendee[] eventAttendees, string subject, string tutorsFirstName) returns gcalendar:Event|error {
     string uuid1String = uuid:createType1AsString();
     string utcOffset = session.utcOffset;
     string[] result = regex:split(utcOffset, ":");
@@ -86,7 +86,7 @@ function createEvent(string calendarId, datasource:Session session, gcalendar:Ev
 function createEventByPost(datasource:Session session, datasource:Tutor tutor, datasource:Student student) returns string|error {
     gcalendar:EventAttendee[] eventAttendees = [{email: tutor.email}, {email: student.email}];
     datasource:Subject subject = check dbClient->/subjects/[tutor.subjectSubjectId];
-    gcalendar:Event event = check createEvent(calendarId, session, eventAttendees, subject.name, tutor.firstName);
+    gcalendar:Event event = check createEvent(session, eventAttendees, subject.name, tutor.firstName);
     return <string>event.id;
 }
 
@@ -95,4 +95,46 @@ function deleteEvent(string eventId) returns error? {
     if (result is error) {
         return result;
     }
+}
+
+function updateEvent(string eventId, datasource:Session session) returns gcalendar:Event|error?{
+    string utcOffset = session.utcOffset;
+    string[] result = regex:split(utcOffset, ":");
+
+    int hours = check int:fromString(result[0]);
+    int minutes = check int:fromString(result[1]);
+    decimal seconds = check decimal:fromString(result[2]);
+    time:Civil civil2 = {
+        year: session.startingTime.year,
+        month: session.startingTime.month,
+        day: session.startingTime.day,
+        hour: session.startingTime.hour,
+        minute: session.startingTime.minute,
+        second: session.startingTime.second,
+        timeAbbrev: session.timeZoneOffset,
+        utcOffset: {hours: hours, minutes: minutes, seconds: seconds}
+    };
+    time:Civil civil3 = {
+        year: session.endingTime.year,
+        month: session.endingTime.month,
+        day: session.endingTime.day,
+        hour: session.endingTime.hour,
+        minute: session.endingTime.minute,
+        second: session.endingTime.second,
+        timeAbbrev: session.timeZoneOffset,
+        utcOffset: {hours: hours, minutes: minutes, seconds: seconds}
+    };
+    string startingTimeString = check time:civilToString(civil2);
+    string endingTimeString = check time:civilToString(civil3);
+    gcalendar:Event updatedEvent = check calendarClient->/calendars/[calendarId]/events/[eventId].put({
+        'start: {
+            dateTime: startingTimeString,
+            timeZone: "UTC"
+        },
+        end: {
+            dateTime: endingTimeString,
+            timeZone: "UTC"
+        }
+    });
+    return updatedEvent;
 }

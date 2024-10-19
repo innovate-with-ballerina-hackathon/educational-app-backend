@@ -1,5 +1,6 @@
 import ballerinax/googleapis.gcalendar;
 import ballerina/uuid;
+import ballerina/time;
 import educational_app_backend.datasource;
 
 // configurable string clientId = ?;
@@ -24,15 +25,37 @@ function createCalendar() returns string|error {
 }
 function createEvent(string calendarId, datasource:Session session, gcalendar:EventAttendee[] eventAttendees, string subject, string tutorsFirstName) returns gcalendar:Event|error {
     string uuid1String = uuid:createType1AsString();
+    time:Civil civil2 = {
+        year: session.startingTime.year,
+        month: session.startingTime.month,
+        day: session.startingTime.day,
+        hour: session.startingTime.hour,
+        minute: session.startingTime.minute,
+        second: session.startingTime.second,
+        timeAbbrev: "Asia/Colombo",
+        utcOffset: {hours: 5, minutes: 30, seconds: 0d}
+    };
+    time:Civil civil3 = {
+        year: session.endingTime.year,
+        month: session.endingTime.month,
+        day: session.endingTime.day,
+        hour: session.endingTime.hour,
+        minute: session.endingTime.minute,
+        second: session.endingTime.second,
+        timeAbbrev: "Asia/Colombo",
+        utcOffset: {hours: 5, minutes: 30, seconds: 0d}
+    };
+    string startingTimeString = check time:civilToString(civil2);
+    string endingTimeString = check time:civilToString(civil3);
     gcalendar:Event event = check calendarClient->/calendars/[calendarId]/events.post(
    payload =
        {
        'start: {
-           dateTime: "2024-10-17T16:00:00+00:00",//'2024-02-22T11:00:00+00:00'
+           dateTime: startingTimeString,
            timeZone: "UTC"
        },
        end: {
-           dateTime: "2024-10-17T17:00:00+00:00",
+           dateTime: endingTimeString,
            timeZone: "UTC"
        },
        summary: subject +" with "+ tutorsFirstName,
@@ -47,16 +70,6 @@ function createEvent(string calendarId, datasource:Session session, gcalendar:Ev
        },
        reminders: {
             useDefault: true
-            // overrides: [
-            //     {
-            //         method: "popup",
-            //         minutes: 15
-            //     },
-            //     {
-            //         method: "email",
-            //         minutes: 30
-            //     }
-            // ]
         }
    },
    conferenceDataVersion = 1

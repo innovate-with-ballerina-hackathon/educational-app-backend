@@ -17,6 +17,15 @@ import ballerinax/persist.sql;
 //     PAID
 // }
 
+public type UtcOffset record {|
+    @sql:Generated
+    readonly int offsetId;
+    int hours; 
+    int minutes;
+    decimal seconds;
+	Session? session;
+|};
+
 public type Session record {|
     @sql:Generated
     readonly int sessionId;
@@ -26,7 +35,8 @@ public type Session record {|
     SessionStatus status;
     string eventId;
     Booking? booking;
-    
+    string timeZoneOffset;
+    UtcOffset utcOffset;
 |};
 
 public type Booking record {|

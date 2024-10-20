@@ -197,7 +197,6 @@ service http:InterceptableService /users on new http:Listener(9091) {
             return caller->respond("Missing required parameters.");
         }
         int tutorId = check int:fromString(tutorStringId);
-        //datasource:Document document = {filepath: "",description: "", id: 0, title: "", category: "BIOLOGY", tutorTutorId: 0}
         string description = "";
         string title = "";
         string fileName = "";
@@ -211,7 +210,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
                     fileName = part.getContentDisposition().fileName;
                     stream<byte[], io:Error?> byteStream = check part.getByteStream(5);
                     stream<io:Block, io:Error?> filter = byteStream.'map(value => value.cloneReadOnly());
-                    _ = check ftpClient->put("/home/in/" + fileName + ".pdf", filter);
+                    _ = check ftpClient->put("/home/in/" + fileName, filter);
 
                 } else if part.getContentDisposition().name == "title" {
                     title = check part.getText();

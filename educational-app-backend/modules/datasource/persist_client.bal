@@ -77,7 +77,8 @@ public isolated client class Client {
                 "student.firstName": {relation: {entityName: "student", refField: "firstName"}},
                 "student.lastName": {relation: {entityName: "student", refField: "lastName"}},
                 "student.email": {relation: {entityName: "student", refField: "email"}},
-                "student.credentialsCredId": {relation: {entityName: "student", refField: "credentialsCredId"}}
+                "student.credentialsCredId": {relation: {entityName: "student", refField: "credentialsCredId"}},
+                "student.subscribedCategory": {relation: {entityName: "student", refField: "subscribedCategory"}}
             },
             keyFields: ["bookingId"],
             joinMetadata: {
@@ -99,6 +100,7 @@ public isolated client class Client {
                 "student.lastName": {relation: {entityName: "student", refField: "lastName"}},
                 "student.email": {relation: {entityName: "student", refField: "email"}},
                 "student.credentialsCredId": {relation: {entityName: "student", refField: "credentialsCredId"}},
+                "student.subscribedCategory": {relation: {entityName: "student", refField: "subscribedCategory"}},
                 "tutor.tutorId": {relation: {entityName: "tutor", refField: "tutorId"}},
                 "tutor.firstName": {relation: {entityName: "tutor", refField: "firstName"}},
                 "tutor.lastName": {relation: {entityName: "tutor", refField: "lastName"}},
@@ -135,7 +137,8 @@ public isolated client class Client {
                 "student.firstName": {relation: {entityName: "student", refField: "firstName"}},
                 "student.lastName": {relation: {entityName: "student", refField: "lastName"}},
                 "student.email": {relation: {entityName: "student", refField: "email"}},
-                "student.credentialsCredId": {relation: {entityName: "student", refField: "credentialsCredId"}}
+                "student.credentialsCredId": {relation: {entityName: "student", refField: "credentialsCredId"}},
+                "student.subscribedCategory": {relation: {entityName: "student", refField: "subscribedCategory"}}
             },
             keyFields: ["credId"],
             joinMetadata: {
@@ -222,6 +225,7 @@ public isolated client class Client {
                 lastName: {columnName: "lastName"},
                 email: {columnName: "email"},
                 credentialsCredId: {columnName: "credentialsCredId"},
+                subscribedCategory: {columnName: "subscribedCategory"},
                 "tutors[].id": {relation: {entityName: "tutors", refField: "id"}},
                 "tutors[].tutorTutorId": {relation: {entityName: "tutors", refField: "tutorTutorId"}},
                 "tutors[].studentStudentId": {relation: {entityName: "tutors", refField: "studentStudentId"}},
@@ -266,7 +270,8 @@ public isolated client class Client {
                 "student.firstName": {relation: {entityName: "student", refField: "firstName"}},
                 "student.lastName": {relation: {entityName: "student", refField: "lastName"}},
                 "student.email": {relation: {entityName: "student", refField: "email"}},
-                "student.credentialsCredId": {relation: {entityName: "student", refField: "credentialsCredId"}}
+                "student.credentialsCredId": {relation: {entityName: "student", refField: "credentialsCredId"}},
+                "student.subscribedCategory": {relation: {entityName: "student", refField: "subscribedCategory"}}
             },
             keyFields: ["id"],
             joinMetadata: {

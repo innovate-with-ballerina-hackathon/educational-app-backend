@@ -273,6 +273,7 @@ public type Student record {|
 
     int credentialsCredId;
 
+    Category? subscribedCategory;
 |};
 
 public type StudentOptionalized record {|
@@ -281,6 +282,7 @@ public type StudentOptionalized record {|
     string lastName?;
     string email?;
     int credentialsCredId?;
+    Category? subscribedCategory?;
 |};
 
 public type StudentWithRelations record {|
@@ -298,6 +300,7 @@ public type StudentInsert record {|
     string lastName;
     string email;
     int credentialsCredId;
+    Category? subscribedCategory;
 |};
 
 public type StudentUpdate record {|
@@ -305,6 +308,7 @@ public type StudentUpdate record {|
     string lastName?;
     string email?;
     int credentialsCredId?;
+    Category? subscribedCategory?;
 |};
 
 public type TutorNStudent record {|

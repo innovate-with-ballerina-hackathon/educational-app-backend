@@ -13,6 +13,8 @@ public enum SessionStatus {
 }
 
 public enum Category {
+    NOT_SPECIFIED,
+    MATHS,
     ASTRO,
     PHYSICS,
     CHEMISTRY,
@@ -337,7 +339,7 @@ public type TutorNStudentUpdate record {|
 
 public type Document record {|
     readonly int id;
-    string filepath;
+    string fileName;
     string title;
     string description;
     Category category;
@@ -346,7 +348,7 @@ public type Document record {|
 
 public type DocumentOptionalized record {|
     int id?;
-    string filepath?;
+    string fileName?;
     string title?;
     string description?;
     Category category?;
@@ -361,7 +363,7 @@ public type DocumentWithRelations record {|
 public type DocumentTargetType typedesc<DocumentWithRelations>;
 
 public type DocumentInsert record {|
-    string filepath;
+    string fileName;
     string title;
     string description;
     Category category;
@@ -369,7 +371,7 @@ public type DocumentInsert record {|
 |};
 
 public type DocumentUpdate record {|
-    string filepath?;
+    string fileName?;
     string title?;
     string description?;
     Category category?;

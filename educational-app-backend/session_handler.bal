@@ -192,22 +192,67 @@ service http:InterceptableService /users on new http:Listener(9091) {
     }
 
     resource function post uploadFile(http:Caller caller, http:Request req) returns error? {
+        string? tutorStringId = req.getQueryParamValue("tutorId");
+        if tutorStringId == null {
+            return caller->respond("Missing required parameters.");
+        }
+        int tutorId = check int:fromString(tutorStringId);
+        //datasource:Document document = {filepath: "",description: "", id: 0, title: "", category: "BIOLOGY", tutorTutorId: 0}
+        string description = "";
+        string title = "";
+        string fileName = "";
+        datasource:Category category = datasource:NOT_SPECIFIED; // Default initialization
+        string stringCategory = "";
+
         mime:Entity[] parts = check req.getBodyParts();
-        // Assume the first part is the file part
         if parts.length() > 0 {
-            mime:Entity filePart = parts[0];
-            string? fileName = filePart.getContentDisposition().toString();
-            if fileName is () {
-                fileName = "uploaded_file.txt"; // Default filename if none provided
-            } else {
-                stream<byte[], io:Error?> byteStream = check filePart.getByteStream(5);
-                stream<io:Block, io:Error?> filter = byteStream.'map(value => value.cloneReadOnly());
-                _ = check ftpClient->put("/home/in/" + fileName + ".pdf", filter);
-                check caller->respond("File uploaded successfully as " + fileName);
+            foreach mime:Entity part in parts {
+                if part.getContentDisposition().name == "text_file" {
+                    fileName = part.getContentDisposition().fileName;
+                    stream<byte[], io:Error?> byteStream = check part.getByteStream(5);
+                    stream<io:Block, io:Error?> filter = byteStream.'map(value => value.cloneReadOnly());
+                    _ = check ftpClient->put("/home/in/" + fileName + ".pdf", filter);
+
+                } else if part.getContentDisposition().name == "title" {
+                    title = check part.getText();
+                } else if part.getContentDisposition().name == "description" {
+                    description = check part.getText();
+                } else if part.getContentDisposition().name == "category" {
+                    stringCategory = check part.getText();
+                    if stringCategory == "ASTRO" {
+                        category = datasource:ASTRO;
+                    } else if stringCategory == "MATHS" {
+                        category = datasource:MATHS;
+                    } else if stringCategory == "PHYSICS" {
+                        category = datasource:PHYSICS;
+                    } else if stringCategory == "CHEMISTRY" {
+                        category = datasource:CHEMISTRY;
+                    } else if stringCategory == "GEOMETRY" {
+                        category = datasource:GEOMETRY;
+                    } else if stringCategory == "ENGLISH" {
+                        category = datasource:ENGLISH;
+                    } else if stringCategory == "FRENCH" {
+                        category = datasource:FRENCH;
+                    } else if stringCategory == "GERMAN" {
+                        category = datasource:GERMAN;
+                    } else if stringCategory == "BIOLOGY" {
+                        category = datasource:BIOLOGY;
+                    }
+                }
             }
-        } else {
+            datasource:DocumentInsert document = {
+                    fileName: fileName,
+                    description: description,
+                    title: title,
+                    category: category,
+                    tutorTutorId: tutorId
+                };
+
+            _ = check self.dbClient->/documents.post([document]);
+            check caller->respond("File uploaded successfully as " + fileName);
+        }
+        else {
             check caller->respond("No file found in the request.");
         }
     }
 }
-

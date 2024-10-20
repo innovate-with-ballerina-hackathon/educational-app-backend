@@ -179,7 +179,7 @@ public isolated client class Client {
                 "subject.subjectId": {relation: {entityName: "subject", refField: "subjectId"}},
                 "subject.name": {relation: {entityName: "subject", refField: "name"}},
                 "document.id": {relation: {entityName: "document", refField: "id"}},
-                "document.filepath": {relation: {entityName: "document", refField: "filepath"}},
+                "document.fileName": {relation: {entityName: "document", refField: "fileName"}},
                 "document.title": {relation: {entityName: "document", refField: "title"}},
                 "document.description": {relation: {entityName: "document", refField: "description"}},
                 "document.category": {relation: {entityName: "document", refField: "category"}},
@@ -279,7 +279,7 @@ public isolated client class Client {
             tableName: "Document",
             fieldMetadata: {
                 id: {columnName: "id", dbGenerated: true},
-                filepath: {columnName: "filepath"},
+                fileName: {columnName: "fileName"},
                 title: {columnName: "title"},
                 description: {columnName: "description"},
                 category: {columnName: "category"},

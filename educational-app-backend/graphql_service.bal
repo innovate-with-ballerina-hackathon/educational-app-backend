@@ -11,6 +11,9 @@ import ballerina/graphql;
     cacheConfig: {
         enabled: true,
         maxSize: 200
+    },
+    cors: {
+        
     }
 }
 

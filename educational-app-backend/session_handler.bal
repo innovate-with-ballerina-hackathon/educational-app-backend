@@ -56,16 +56,48 @@ service http:InterceptableService /users on new http:Listener(9091) {
         return [new RequestInterceptor(), new ResponseInterceptor()];
     }
 
+    //resource to get tutor by tutorId
+    resource function get tutor/[int tutorId]() returns datasource:Tutor|http:InternalServerError|http:NotFound|error {
+        datasource:Tutor|persist:Error tutor = self.dbClient->/tutors/[tutorId];
+        if tutor is persist:Error {
+            if tutor is persist:NotFoundError {
+                return http:NOT_FOUND;
+            }
+            return http:INTERNAL_SERVER_ERROR;
+        }
+        return tutor;
+        
+    }
+
+    //resource to get student by studentId
+    resource function get student/[int studentId]() returns datasource:Student|http:InternalServerError|http:NotFound|error {
+        datasource:Student|persist:Error student = self.dbClient->/students/[studentId];
+        if student is persist:Error {
+            if student is persist:NotFoundError {
+                return http:NOT_FOUND;
+            }
+            return http:INTERNAL_SERVER_ERROR;
+        }
+        return student;
+    }
+
+
     //resource to handle post requests for sessions
-    resource function post sessions(datasource:SessionInsert session) returns http:InternalServerError|http:Conflict|http:Created|error {
+    resource function post sessions(datasource:SessionInsert session) returns http:InternalServerError|http:Conflict|http:Created|datasource:Session[]|error {
         int[]|persist:Error result = self.dbClient->/sessions.post([session]);
         if result is persist:Error {
             if result is persist:AlreadyExistsError {
                 return http:CONFLICT;
             }
             return http:INTERNAL_SERVER_ERROR;
+        } else {
+            datasource:Session[] postedSessions = [];
+            foreach int sessionId in result {
+                datasource:Session postedSession = check self.dbClient->/sessions/[sessionId];
+                postedSessions.push(postedSession);
+            }
+            return postedSessions;
         }
-        return http:CREATED;
     }
 
     //resource to handle book sessions

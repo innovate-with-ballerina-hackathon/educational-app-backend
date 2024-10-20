@@ -75,6 +75,7 @@ service / on new http:Listener(9093) {
             string lastName = check decodedIdToken.family_name;
             string email = check decodedIdToken.email;
 
+            int userId = 0;
             if (refreshToken is string) {
                 if userRole == "student" {
                     int credentialId = check addAuthCredentials(userRole, accessToken, refreshToken, idToken);
@@ -92,6 +93,7 @@ service / on new http:Listener(9093) {
                         }
                         response.setHeader("message", http:INTERNAL_SERVER_ERROR.toString() + "Internal Server Error Occured");
                     } else {
+                        userId = result[0];
                         response.setHeader("message", http:OK.toString() + "User Created Successfully");
                         string emailBody = "Welcome to Edu-App! We're excited to have you onboard. Start exploring and connecting with expert tutors to reach your learning goals today!";
                         sendOnboardingEmails(firstName, emailBody, email);
@@ -121,6 +123,7 @@ service / on new http:Listener(9093) {
                         }
                         response.setHeader("message", http:INTERNAL_SERVER_ERROR.toString() + "Internal Server Error Occured");
                     } else {
+                        userId = result[0];
                         response.setHeader("message", http:OK.toString() + "User Created Successfully");
                         string emailBody = "Welcome to Edu-App! We're thrilled to have you join our community of educators. Get ready to share your expertise and help students succeed!";
                         sendOnboardingEmails(firstName, emailBody, email);
@@ -135,7 +138,8 @@ service / on new http:Listener(9093) {
             }
             json responseJson = {
                 "access_token": accessToken,
-                "refresh_token": refreshToken
+                "refresh_token": refreshToken,
+                "user_id": userId
             };
             response.setPayload(responseJson);
             return caller->respond(response);

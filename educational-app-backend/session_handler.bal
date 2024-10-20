@@ -5,6 +5,7 @@ import ballerina/http;
 import ballerina/io;
 import ballerina/mime;
 import ballerina/persist;
+import ballerina/regex;
 import ballerina/time;
 
 ftp:ClientConfiguration ftpConfig = {
@@ -111,16 +112,43 @@ service http:InterceptableService /users on new http:Listener(9091) {
             select session;
     }
 
-    //resource to handle GET requests for students by id
-    resource function get students/[int id]() returns http:InternalServerError & readonly|http:NotFound & readonly|datasource:Student {
-        datasource:Student|persist:Error result = self.dbClient->/students/[id];
-        if result is persist:Error {
-            if result is persist:NotFoundError {
-                return http:NOT_FOUND;
+    //resource to handle GET requests for upcoming sessions for a given student
+    resource function get sessions/[int studentId]() returns http:InternalServerError & readonly|http:NotFound & readonly|datasource:Session[]|error {
+        stream<datasource:Booking, persist:Error?> bookings = self.dbClient->/bookings();
+        int[] sessionIds = check from datasource:Booking booking in bookings
+            where booking.studentStudentId == studentId
+            select booking.sessionSessionId;
+        datasource:Session[] upcomingSessions = [];
+        foreach int sessionId in sessionIds {
+            datasource:Session|persist:Error session = self.dbClient->/sessions/[sessionId];
+            if session is persist:Error {
+                if session is persist:NotFoundError {
+                    return http:NOT_FOUND;
+                }
+                return http:INTERNAL_SERVER_ERROR;
             }
-            return http:INTERNAL_SERVER_ERROR;
+            time:Utc currentTime = time:utcNow();
+            string[] result = regex:split(session.utcOffset, ":");
+
+            int hours = check int:fromString(result[0]);
+            int minutes = check int:fromString(result[1]);
+            decimal seconds = check decimal:fromString(result[2]);
+            time:Civil civil2 = {
+                year: session.endingTime.year,
+                month: session.endingTime.month,
+                day: session.endingTime.day,
+                hour: session.endingTime.hour,
+                minute: session.endingTime.minute,
+                second: session.endingTime.second,
+                timeAbbrev: session.timeZoneOffset,
+                utcOffset: {hours: hours, minutes: minutes, seconds: seconds}
+            };
+            time:Utc endingTime = check time:utcFromCivil(civil2);
+            if endingTime > currentTime {
+                upcomingSessions.push(session);
+            }
         }
-        return result;
+        return upcomingSessions;
     }
 
     // Define the resource to handle update session status
@@ -154,37 +182,27 @@ service http:InterceptableService /users on new http:Listener(9091) {
     }
 
     //resource to handle DELETE requests for sessions by the tutors
-    resource function delete tutor/[int id]/sessions(int year, int month, int day, int hour, int minutes) returns (http:InternalServerError & readonly)|(http:NoContent & readonly)|(http:NotFound & readonly)|error {
+    resource function delete session/[int sessionId]/delete() returns (http:InternalServerError & readonly)|(http:NoContent & readonly)|(http:NotFound & readonly)|error {
 
         //calender event also needs to be deleted
-        stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions;
-        datasource:Session[]|persist:Error result = from datasource:Session session in sessions
-            where session.sessionId == id
-            && session.startingTime.year == year
-            && session.startingTime.month == month
-            && session.startingTime.day == day
-            && session.startingTime.hour == hour
-            && session.startingTime.minute == minutes
-            select session;
-        if result is persist:Error {
-            if result is persist:NotFoundError {
+        datasource:Session|persist:Error session = self.dbClient->/sessions/[sessionId]();
+        if session is persist:Error {
+            if session is persist:NotFoundError {
                 return http:NOT_FOUND;
             }
             return http:INTERNAL_SERVER_ERROR;
         } else {
-            foreach datasource:Session session in result {
-                string? eventId = session.eventId;
-                if eventId != "" && eventId != () {
-                    _ = check deleteEvent(eventId);
-                    datasource:Session|persist:Error cancelledSession = self.dbClient->/sessions/[session.sessionId].put({eventId: session.eventId, status: datasource:CANCELLED});
-                    if cancelledSession is persist:Error {
-                        return http:INTERNAL_SERVER_ERROR;
-                    }
-                } else {
-                    datasource:Session|persist:Error deleteSession = self.dbClient->/sessions/[session.sessionId].delete();
-                    if deleteSession is persist:Error {
-                        return http:INTERNAL_SERVER_ERROR;
-                    }
+            string? eventId = session.eventId;
+            if eventId != "" && eventId != () {
+                _ = check deleteEvent(eventId);
+                datasource:Session|persist:Error cancelledSession = self.dbClient->/sessions/[session.sessionId].put({eventId: "0", status: datasource:CANCELLED});
+                if cancelledSession is persist:Error {
+                    return http:INTERNAL_SERVER_ERROR;
+                }
+            } else {
+                datasource:Session|persist:Error deleteSession = self.dbClient->/sessions/[session.sessionId].delete();
+                if deleteSession is persist:Error {
+                    return http:INTERNAL_SERVER_ERROR;
                 }
             }
         }
@@ -240,12 +258,12 @@ service http:InterceptableService /users on new http:Listener(9091) {
                 }
             }
             datasource:DocumentInsert document = {
-                    fileName: fileName,
-                    description: description,
-                    title: title,
-                    category: category,
-                    tutorTutorId: tutorId
-                };
+                fileName: fileName,
+                description: description,
+                title: title,
+                category: category,
+                tutorTutorId: tutorId
+            };
 
             _ = check self.dbClient->/documents.post([document]);
             check caller->respond("File uploaded successfully as " + fileName);

@@ -13,7 +13,7 @@ import ballerina/graphql;
         maxSize: 200
     },
     cors: {
-        
+        allowOrigins: ["*"]
     }
 }
 

@@ -44,7 +44,11 @@ service class ResponseInterceptor {
         return ctx.next();
     }
 }
-
+@http:ServiceConfig {
+    cors: {
+        allowOrigins: ["*"]
+    }
+}
 service http:InterceptableService /users on new http:Listener(9091) {
     private final datasource:Client dbClient;
 
@@ -82,7 +86,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
     }
 
 
-    //resource to handle post requests for sessions
+    //resource for tutors to post new sessions
     resource function post sessions(datasource:SessionInsert session) returns http:InternalServerError|http:Conflict|http:Created|datasource:Session[]|error {
         int[]|persist:Error result = self.dbClient->/sessions.post([session]);
         if result is persist:Error {
@@ -100,7 +104,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
         }
     }
 
-    //resource to handle book sessions
+    //resource for students to book sessions
     resource function put session_booking/[int sessionId](http:Caller caller, http:Request req) returns error? {
         string? stuId = req.getQueryParamValue("studentId");
         http:Response response = new;
@@ -144,7 +148,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
             select session;
     }
 
-    //resource to handle GET requests for upcoming sessions for a given student
+    //resource to handle get requests for upcoming sessions for a given student
     resource function get sessions/[int studentId]() returns http:InternalServerError & readonly|http:NotFound & readonly|datasource:Session[]|error {
         stream<datasource:Booking, persist:Error?> bookings = self.dbClient->/bookings();
         int[] sessionIds = check from datasource:Booking booking in bookings
@@ -239,6 +243,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
         return http:NO_CONTENT;
     }
 
+    // resource to add a category to a student
     resource function put students/[int studentId]/category(datasource:Category subscribedCategory) returns  http:Created|http:NotFound|http:InternalServerError|error {
         datasource:Student|persist:Error addCategory = self.dbClient->/students/[studentId].put({subscribedCategory: subscribedCategory});
         if addCategory is persist:Error {
@@ -248,8 +253,9 @@ service http:InterceptableService /users on new http:Listener(9091) {
             return http:INTERNAL_SERVER_ERROR;
         }
         return http:CREATED;
-    }   
+    }
 
+    //resource for tutors to upload materials to the ftp server
     resource function post uploadFile(http:Caller caller, http:Request req) returns error? {
         string? tutorStringId = req.getQueryParamValue("tutorId");
         if tutorStringId == null {
@@ -259,7 +265,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
         string description = "";
         string title = "";
         string fileName = "";
-        datasource:Category category = datasource:NOT_SPECIFIED; // Default initialization
+        datasource:Category category = datasource:NOT_SPECIFIED;
         string stringCategory = "";
 
         mime:Entity[] parts = check req.getBodyParts();

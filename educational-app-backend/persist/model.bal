@@ -148,6 +148,8 @@ public type TutorNStudent record {|
 |};
 
 public enum Category {
+    NOT_SPECIFIED,
+    MATHS,
     ASTRO, 
     PHYSICS,
     CHEMISTRY,
@@ -162,7 +164,7 @@ public enum Category {
 public type Document record {|
     @sql:Generated
     readonly int id;
-    string filepath;
+    string fileName;
     string title;
     string description;
     Category category;

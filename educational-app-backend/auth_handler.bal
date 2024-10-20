@@ -82,7 +82,8 @@ service / on new http:Listener(9093) {
                         "firstName": firstName,
                         "lastName": lastName,
                         "email": email,
-                        "credentialsCredId": credentialId
+                        "credentialsCredId": credentialId,
+                        "subscribedCategory": datasource:NOT_SPECIFIED
                     };
                     int[]|persist:Error result = dbClient->/students.post([student]);
                     if result is persist:Error {

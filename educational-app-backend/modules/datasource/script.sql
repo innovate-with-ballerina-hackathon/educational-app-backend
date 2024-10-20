@@ -33,6 +33,7 @@ CREATE TABLE `Student` (
 	`firstName` VARCHAR(191) NOT NULL,
 	`lastName` VARCHAR(191) NOT NULL,
 	`email` VARCHAR(191) NOT NULL,
+	`subscribedCategory` ENUM('NOT_SPECIFIED', 'MATHS', 'ASTRO', 'PHYSICS', 'CHEMISTRY', 'GEOMETRY', 'ENGLISH', 'FRENCH', 'GERMAN', 'BIOLOGY'),
 	`credentialsCredId` INT UNIQUE NOT NULL,
 	FOREIGN KEY(`credentialsCredId`) REFERENCES `AuthCredentials`(`credId`),
 	PRIMARY KEY(`studentId`)

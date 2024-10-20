@@ -137,6 +137,7 @@ public type Student record{|
 	Review? review;
     AuthCredentials credentials;
     Booking[] booking;
+    Category? subscribedCategory;
     
 |};
 

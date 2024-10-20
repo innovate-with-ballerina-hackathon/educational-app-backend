@@ -4,6 +4,7 @@ import ballerina/sql;
 import ballerinax/mysql;
 import ballerinax/mysql.driver as _;
 map<websocket:Caller> connectionsMap = {};
+import ballerina/time;
 
 // Define constant keys for storing IDs as attributes in the WebSocket session.
 const string TUTOR_ID_KEY = "tutor_id";
@@ -115,13 +116,14 @@ service class ChatServerforStudent {
     // When a message is received from the student, route it to the tutor.
 remote function onMessage(websocket:Caller caller, string text) returns error? {
     string msg = "Message from Student " + self.student_id.toString() + " to Tutor " + self.tutor_id.toString() + ": " + text;
-
+    time:Utc currentUtc = time:utcNow();
+    string utcString = time:utcToString(utc);
     // Store the message in the database
     MessageWrite message = {
         sender_id: self.student_id,
         receiver_id: self.tutor_id,
         message: text,
-        timestamp: "2021-09-01 12:00:00", // Timestamp should be dynamically generated
+        timestamp: utcString, // Timestamp should be dynamically generated
         sender_type: "students",
         receiver_type: "tutors"
     };
@@ -187,13 +189,14 @@ service class ChatServerforTeacher {
     // When a message is received on the WebSocket connection.
     remote function onMessage(websocket:Caller caller, string text) returns error? {
     string msg = "Message from Tutor " + self.tutor_id.toString() + " to Student " + self.student_id.toString() + ": " + text;
-
+    time:Utc currentUtc = time:utcNow();
+    string utcString = time:utcToString(utc);
     // Store the message in the database
     MessageWrite message = {
         sender_id: self.tutor_id,
         receiver_id: self.student_id,
         message: text,
-        timestamp: "2021-09-01 12:00:00", // Timestamp should be dynamically generated
+        timestamp: utcString, // Timestamp should be dynamically generated
         sender_type: "tutors",
         receiver_type: "students"
     };

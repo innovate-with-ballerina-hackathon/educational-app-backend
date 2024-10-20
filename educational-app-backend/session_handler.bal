@@ -215,8 +215,6 @@ service http:InterceptableService /users on new http:Listener(9091) {
 
     //resource to handle DELETE requests for sessions by the tutors
     resource function delete session/[int sessionId]/delete() returns (http:InternalServerError & readonly)|(http:NoContent & readonly)|(http:NotFound & readonly)|error {
-
-        //calender event also needs to be deleted
         datasource:Session|persist:Error session = self.dbClient->/sessions/[sessionId]();
         if session is persist:Error {
             if session is persist:NotFoundError {
@@ -240,6 +238,17 @@ service http:InterceptableService /users on new http:Listener(9091) {
         }
         return http:NO_CONTENT;
     }
+
+    resource function put students/[int studentId]/category(datasource:Category subscribedCategory) returns  http:Created|http:NotFound|http:InternalServerError|error {
+        datasource:Student|persist:Error addCategory = self.dbClient->/students/[studentId].put({subscribedCategory: subscribedCategory});
+        if addCategory is persist:Error {
+            if addCategory is persist:NotFoundError {
+                return http:NOT_FOUND;
+            }
+            return http:INTERNAL_SERVER_ERROR;
+        }
+        return http:CREATED;
+    }   
 
     resource function post uploadFile(http:Caller caller, http:Request req) returns error? {
         string? tutorStringId = req.getQueryParamValue("tutorId");

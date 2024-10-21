@@ -44,6 +44,7 @@ service class ResponseInterceptor {
         return ctx.next();
     }
 }
+
 @http:ServiceConfig {
     cors: {
         allowOrigins: ["*"]
@@ -70,7 +71,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
             return http:INTERNAL_SERVER_ERROR;
         }
         return tutor;
-        
+
     }
 
     //resource to get student by studentId
@@ -85,6 +86,46 @@ service http:InterceptableService /users on new http:Listener(9091) {
         return student;
     }
 
+    //resource to get the list of students for a given tutor
+    resource function get tutor/[int tutorId]/students() returns datasource:Student[]|http:InternalServerError|http:NotFound|error {
+        stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions();
+        int[] sessionIdArray = check from datasource:Session session in sessions
+            where session.tutorTutorId == tutorId
+            select session.sessionId;
+        datasource:Student[] studentArray = [];
+        foreach int sessionId in sessionIdArray {
+            stream<datasource:Booking, persist:Error?> bookings = self.dbClient->/bookings();
+            int[] studentIdArray = check from datasource:Booking booking in bookings
+                where booking.sessionSessionId == sessionId
+                select booking.studentStudentId;
+            foreach int studentId in studentIdArray {
+                datasource:Student student = check self.dbClient->/students/[studentId];
+                studentArray.push(student);
+            }
+        }
+        return studentArray;
+    }
+
+    //resource to get a list of tutors for a given student
+    resource function get student/[int studentId]/tutors() returns datasource:Tutor[]|http:InternalServerError|http:NotFound|error {
+        stream<datasource:Booking, persist:Error?> bookings = self.dbClient->/bookings();
+        int[] sessionIdArray = check from datasource:Booking booking in bookings
+            where booking.studentStudentId == studentId
+            select booking.sessionSessionId;
+        datasource:Tutor[] tutorArray = [];
+        foreach int sessionId in sessionIdArray {
+            datasource:Session|persist:Error session = self.dbClient->/sessions/[sessionId];
+            if session is persist:Error {
+                if session is persist:NotFoundError {
+                    return http:NOT_FOUND;
+                }
+                return http:INTERNAL_SERVER_ERROR;
+            }
+            datasource:Tutor tutor = check self.dbClient->/tutors/[session.tutorTutorId];
+            tutorArray.push(tutor);
+        }
+        return tutorArray;
+    }
 
     //resource for tutors to post new sessions
     resource function post sessions(datasource:SessionInsert session) returns http:InternalServerError|http:Conflict|http:Created|datasource:Session[]|error {
@@ -244,7 +285,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
     }
 
     // resource to add a category to a student
-    resource function put students/[int studentId]/category(datasource:Category subscribedCategory) returns  http:Created|http:NotFound|http:InternalServerError|error {
+    resource function put students/[int studentId]/category(datasource:Category subscribedCategory) returns http:Created|http:NotFound|http:InternalServerError|error {
         datasource:Student|persist:Error addCategory = self.dbClient->/students/[studentId].put({subscribedCategory: subscribedCategory});
         if addCategory is persist:Error {
             if addCategory is persist:NotFoundError {

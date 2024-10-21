@@ -5,6 +5,7 @@ import ballerina/http;
 import ballerina/io;
 import ballerina/mime;
 import ballerina/persist;
+import ballerina/regex;
 import ballerina/time;
 
 ftp:ClientConfiguration ftpConfig = {
@@ -44,6 +45,11 @@ service class ResponseInterceptor {
     }
 }
 
+@http:ServiceConfig {
+    cors: {
+        allowOrigins: ["*"]
+    }
+}
 service http:InterceptableService /users on new http:Listener(9091) {
     private final datasource:Client dbClient;
 
@@ -55,19 +61,152 @@ service http:InterceptableService /users on new http:Listener(9091) {
         return [new RequestInterceptor(), new ResponseInterceptor()];
     }
 
-    //resource to handle post requests for sessions
-    resource function post sessions(datasource:SessionInsert session) returns http:InternalServerError|http:Conflict|http:Created|error {
+    //resource to get tutor by tutorId
+    resource function get tutor/[int tutorId]() returns datasource:Tutor|http:InternalServerError|http:NotFound|error {
+        datasource:Tutor|persist:Error tutor = self.dbClient->/tutors/[tutorId];
+        if tutor is persist:Error {
+            if tutor is persist:NotFoundError {
+                return http:NOT_FOUND;
+            }
+            return http:INTERNAL_SERVER_ERROR;
+        }
+        return tutor;
+
+    }
+
+    //resource to get student by studentId
+    resource function get student/[int studentId]() returns datasource:Student|http:InternalServerError|http:NotFound|error {
+        datasource:Student|persist:Error student = self.dbClient->/students/[studentId];
+        if student is persist:Error {
+            if student is persist:NotFoundError {
+                return http:NOT_FOUND;
+            }
+            return http:INTERNAL_SERVER_ERROR;
+        }
+        return student;
+    }
+
+    //resource to get the list of students for a given tutor
+    resource function get tutor/[int tutorId]/students() returns datasource:Student[]|http:InternalServerError|http:NotFound|error {
+        stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions();
+        int[] sessionIdArray = check from datasource:Session session in sessions
+            where session.tutorTutorId == tutorId
+            select session.sessionId;
+        datasource:Student[] studentArray = [];
+        foreach int sessionId in sessionIdArray {
+            stream<datasource:Booking, persist:Error?> bookings = self.dbClient->/bookings();
+            int[] studentIdArray = check from datasource:Booking booking in bookings
+                where booking.sessionSessionId == sessionId
+                select booking.studentStudentId;
+            foreach int studentId in studentIdArray {
+                datasource:Student student = check self.dbClient->/students/[studentId];
+                studentArray.push(student);
+            }
+        }
+        return studentArray;
+    }
+
+    //resource to get a list of tutors for a given student
+    resource function get student/[int studentId]/tutors() returns datasource:Tutor[]|http:InternalServerError|http:NotFound|error {
+        stream<datasource:Booking, persist:Error?> bookings = self.dbClient->/bookings();
+        int[] sessionIdArray = check from datasource:Booking booking in bookings
+            where booking.studentStudentId == studentId
+            select booking.sessionSessionId;
+        datasource:Tutor[] tutorArray = [];
+        foreach int sessionId in sessionIdArray {
+            datasource:Session|persist:Error session = self.dbClient->/sessions/[sessionId];
+            if session is persist:Error {
+                if session is persist:NotFoundError {
+                    return http:NOT_FOUND;
+                }
+                return http:INTERNAL_SERVER_ERROR;
+            }
+            datasource:Tutor tutor = check self.dbClient->/tutors/[session.tutorTutorId];
+            tutorArray.push(tutor);
+        }
+        return tutorArray;
+    }
+
+    //resource to edit tutor details
+    resource function put tutor/[int tutorId]/profile(datasource:TutorUpdate tutorUpdate) returns datasource:Tutor|http:InternalServerError|http:NotFound|error {
+        if tutorUpdate?.experienceYears is int && tutorUpdate?.price is int {
+            datasource:Tutor|persist:Error tutor = self.dbClient->/tutors/[tutorId].put({
+                firstName: tutorUpdate.firstName,
+                lastName: tutorUpdate.lastName,
+                experienceYears: tutorUpdate?.experienceYears,
+                price: tutorUpdate?.price
+            });
+            if tutor is persist:Error {
+                if tutor is persist:NotFoundError {
+                    return http:NOT_FOUND;
+                }
+                return http:INTERNAL_SERVER_ERROR;
+            }
+            return tutor;
+        } else {
+            datasource:Tutor|persist:Error tutor = self.dbClient->/tutors/[tutorId].put({
+                firstName: tutorUpdate.firstName,
+                lastName: tutorUpdate.lastName
+            });
+            if tutor is persist:Error {
+                if tutor is persist:NotFoundError {
+                    return http:NOT_FOUND;
+                }
+                return http:INTERNAL_SERVER_ERROR;
+            }
+            return tutor;
+        }
+    }
+
+    //resource to edit student details
+    resource function put student/[int studentId]/profile(datasource:StudentUpdate studentUpdate) returns datasource:Student|http:InternalServerError|http:NotFound|error {
+        if studentUpdate?.subscribedCategory is datasource:Category {
+            datasource:Student|persist:Error student = self.dbClient->/students/[studentId].put({
+                firstName: studentUpdate.firstName,
+                lastName: studentUpdate.lastName,
+                subscribedCategory: studentUpdate?.subscribedCategory
+            });
+            if student is persist:Error {
+                if student is persist:NotFoundError {
+                    return http:NOT_FOUND;
+                }
+                return http:INTERNAL_SERVER_ERROR;
+            }
+            return student;
+        } else {
+            datasource:Student|persist:Error student = self.dbClient->/students/[studentId].put({
+                firstName: studentUpdate.firstName,
+                lastName: studentUpdate.lastName
+            });
+            if student is persist:Error {
+                if student is persist:NotFoundError {
+                    return http:NOT_FOUND;
+                }
+                return http:INTERNAL_SERVER_ERROR;
+            }
+            return student;
+        }
+    }
+
+    //resource for tutors to post new sessions
+    resource function post sessions(datasource:SessionInsert session) returns http:InternalServerError|http:Conflict|http:Created|datasource:Session[]|error {
         int[]|persist:Error result = self.dbClient->/sessions.post([session]);
         if result is persist:Error {
             if result is persist:AlreadyExistsError {
                 return http:CONFLICT;
             }
             return http:INTERNAL_SERVER_ERROR;
+        } else {
+            datasource:Session[] postedSessions = [];
+            foreach int sessionId in result {
+                datasource:Session postedSession = check self.dbClient->/sessions/[sessionId];
+                postedSessions.push(postedSession);
+            }
+            return postedSessions;
         }
-        return http:CREATED;
     }
 
-    //resource to handle book sessions
+    //resource for students to book sessions
     resource function put session_booking/[int sessionId](http:Caller caller, http:Request req) returns error? {
         string? stuId = req.getQueryParamValue("studentId");
         http:Response response = new;
@@ -111,16 +250,43 @@ service http:InterceptableService /users on new http:Listener(9091) {
             select session;
     }
 
-    //resource to handle GET requests for students by id
-    resource function get students/[int id]() returns http:InternalServerError & readonly|http:NotFound & readonly|datasource:Student {
-        datasource:Student|persist:Error result = self.dbClient->/students/[id];
-        if result is persist:Error {
-            if result is persist:NotFoundError {
-                return http:NOT_FOUND;
+    //resource to handle get requests for upcoming sessions for a given student
+    resource function get sessions/[int studentId]() returns http:InternalServerError & readonly|http:NotFound & readonly|datasource:Session[]|error {
+        stream<datasource:Booking, persist:Error?> bookings = self.dbClient->/bookings();
+        int[] sessionIds = check from datasource:Booking booking in bookings
+            where booking.studentStudentId == studentId
+            select booking.sessionSessionId;
+        datasource:Session[] upcomingSessions = [];
+        foreach int sessionId in sessionIds {
+            datasource:Session|persist:Error session = self.dbClient->/sessions/[sessionId];
+            if session is persist:Error {
+                if session is persist:NotFoundError {
+                    return http:NOT_FOUND;
+                }
+                return http:INTERNAL_SERVER_ERROR;
             }
-            return http:INTERNAL_SERVER_ERROR;
+            time:Utc currentTime = time:utcNow();
+            string[] result = regex:split(session.utcOffset, ":");
+
+            int hours = check int:fromString(result[0]);
+            int minutes = check int:fromString(result[1]);
+            decimal seconds = check decimal:fromString(result[2]);
+            time:Civil civil2 = {
+                year: session.endingTime.year,
+                month: session.endingTime.month,
+                day: session.endingTime.day,
+                hour: session.endingTime.hour,
+                minute: session.endingTime.minute,
+                second: session.endingTime.second,
+                timeAbbrev: session.timeZoneOffset,
+                utcOffset: {hours: hours, minutes: minutes, seconds: seconds}
+            };
+            time:Utc endingTime = check time:utcFromCivil(civil2);
+            if endingTime > currentTime {
+                upcomingSessions.push(session);
+            }
         }
-        return result;
+        return upcomingSessions;
     }
 
     // Define the resource to handle update session status
@@ -154,43 +320,44 @@ service http:InterceptableService /users on new http:Listener(9091) {
     }
 
     //resource to handle DELETE requests for sessions by the tutors
-    resource function delete tutor/[int id]/sessions(int year, int month, int day, int hour, int minutes) returns (http:InternalServerError & readonly)|(http:NoContent & readonly)|(http:NotFound & readonly)|error {
-
-        //calender event also needs to be deleted
-        stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions;
-        datasource:Session[]|persist:Error result = from datasource:Session session in sessions
-            where session.sessionId == id
-            && session.startingTime.year == year
-            && session.startingTime.month == month
-            && session.startingTime.day == day
-            && session.startingTime.hour == hour
-            && session.startingTime.minute == minutes
-            select session;
-        if result is persist:Error {
-            if result is persist:NotFoundError {
+    resource function delete session/[int sessionId]/delete() returns (http:InternalServerError & readonly)|(http:NoContent & readonly)|(http:NotFound & readonly)|error {
+        datasource:Session|persist:Error session = self.dbClient->/sessions/[sessionId]();
+        if session is persist:Error {
+            if session is persist:NotFoundError {
                 return http:NOT_FOUND;
             }
             return http:INTERNAL_SERVER_ERROR;
         } else {
-            foreach datasource:Session session in result {
-                string? eventId = session.eventId;
-                if eventId != "" && eventId != () {
-                    _ = check deleteEvent(eventId);
-                    datasource:Session|persist:Error cancelledSession = self.dbClient->/sessions/[session.sessionId].put({eventId: session.eventId, status: datasource:CANCELLED});
-                    if cancelledSession is persist:Error {
-                        return http:INTERNAL_SERVER_ERROR;
-                    }
-                } else {
-                    datasource:Session|persist:Error deleteSession = self.dbClient->/sessions/[session.sessionId].delete();
-                    if deleteSession is persist:Error {
-                        return http:INTERNAL_SERVER_ERROR;
-                    }
+            string? eventId = session.eventId;
+            if eventId != "" && eventId != () {
+                _ = check deleteEvent(eventId);
+                datasource:Session|persist:Error cancelledSession = self.dbClient->/sessions/[session.sessionId].put({eventId: "0", status: datasource:CANCELLED});
+                if cancelledSession is persist:Error {
+                    return http:INTERNAL_SERVER_ERROR;
+                }
+            } else {
+                datasource:Session|persist:Error deleteSession = self.dbClient->/sessions/[session.sessionId].delete();
+                if deleteSession is persist:Error {
+                    return http:INTERNAL_SERVER_ERROR;
                 }
             }
         }
         return http:NO_CONTENT;
     }
 
+    // resource to add a category to a student
+    resource function put students/[int studentId]/category(datasource:Category subscribedCategory) returns http:Created|http:NotFound|http:InternalServerError|error {
+        datasource:Student|persist:Error addCategory = self.dbClient->/students/[studentId].put({subscribedCategory: subscribedCategory});
+        if addCategory is persist:Error {
+            if addCategory is persist:NotFoundError {
+                return http:NOT_FOUND;
+            }
+            return http:INTERNAL_SERVER_ERROR;
+        }
+        return http:CREATED;
+    }
+
+    //resource for tutors to upload materials to the ftp server
     resource function post uploadFile(http:Caller caller, http:Request req) returns error? {
         string? tutorStringId = req.getQueryParamValue("tutorId");
         if tutorStringId == null {
@@ -200,7 +367,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
         string description = "";
         string title = "";
         string fileName = "";
-        datasource:Category category = datasource:NOT_SPECIFIED; // Default initialization
+        datasource:Category category = datasource:NOT_SPECIFIED;
         string stringCategory = "";
 
         mime:Entity[] parts = check req.getBodyParts();
@@ -240,12 +407,12 @@ service http:InterceptableService /users on new http:Listener(9091) {
                 }
             }
             datasource:DocumentInsert document = {
-                    fileName: fileName,
-                    description: description,
-                    title: title,
-                    category: category,
-                    tutorTutorId: tutorId
-                };
+                fileName: fileName,
+                description: description,
+                title: title,
+                category: category,
+                tutorTutorId: tutorId
+            };
 
             _ = check self.dbClient->/documents.post([document]);
             check caller->respond("File uploaded successfully as " + fileName);

@@ -127,6 +127,67 @@ service http:InterceptableService /users on new http:Listener(9091) {
         return tutorArray;
     }
 
+    //resource to edit tutor details
+    resource function put tutor/[int tutorId]/profile(datasource:TutorUpdate tutorUpdate) returns datasource:Tutor|http:InternalServerError|http:NotFound|error {
+        if tutorUpdate?.experienceYears is int && tutorUpdate?.price is int {
+            datasource:Tutor|persist:Error tutor = self.dbClient->/tutors/[tutorId].put({
+                firstName: tutorUpdate.firstName,
+                lastName: tutorUpdate.lastName,
+                experienceYears: tutorUpdate?.experienceYears,
+                price: tutorUpdate?.price
+            });
+            if tutor is persist:Error {
+                if tutor is persist:NotFoundError {
+                    return http:NOT_FOUND;
+                }
+                return http:INTERNAL_SERVER_ERROR;
+            }
+            return tutor;
+        } else {
+            datasource:Tutor|persist:Error tutor = self.dbClient->/tutors/[tutorId].put({
+                firstName: tutorUpdate.firstName,
+                lastName: tutorUpdate.lastName
+            });
+            if tutor is persist:Error {
+                if tutor is persist:NotFoundError {
+                    return http:NOT_FOUND;
+                }
+                return http:INTERNAL_SERVER_ERROR;
+            }
+            return tutor;
+        }
+    }
+
+    //resource to edit student details
+    resource function put student/[int studentId]/profile(datasource:StudentUpdate studentUpdate) returns datasource:Student|http:InternalServerError|http:NotFound|error {
+        if studentUpdate?.subscribedCategory is datasource:Category {
+            datasource:Student|persist:Error student = self.dbClient->/students/[studentId].put({
+                firstName: studentUpdate.firstName,
+                lastName: studentUpdate.lastName,
+                subscribedCategory: studentUpdate?.subscribedCategory
+            });
+            if student is persist:Error {
+                if student is persist:NotFoundError {
+                    return http:NOT_FOUND;
+                }
+                return http:INTERNAL_SERVER_ERROR;
+            }
+            return student;
+        } else {
+            datasource:Student|persist:Error student = self.dbClient->/students/[studentId].put({
+                firstName: studentUpdate.firstName,
+                lastName: studentUpdate.lastName
+            });
+            if student is persist:Error {
+                if student is persist:NotFoundError {
+                    return http:NOT_FOUND;
+                }
+                return http:INTERNAL_SERVER_ERROR;
+            }
+            return student;
+        }
+    }
+
     //resource for tutors to post new sessions
     resource function post sessions(datasource:SessionInsert session) returns http:InternalServerError|http:Conflict|http:Created|datasource:Session[]|error {
         int[]|persist:Error result = self.dbClient->/sessions.post([session]);

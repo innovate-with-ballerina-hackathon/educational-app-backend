@@ -66,6 +66,25 @@ kafkaGroupId = ""
 host = ""
 port = 0
 user = ""
-password = "0"
+password = ""
 database = ""
+```
+## 2. Run Docker Compose
 
+To start the necessary services (FTP server and Kafka server), use the following command:
+
+```bash
+docker-compose up
+```
+
+## 3. Set Up the MySQL Database
+Establish a MySQL connection using the credentials from the `Config.toml` file.
+Run the `script.sql` file to create all required tables in the educational_app_db database.
+Then, run the `data_entries.sql` file to populate the database with necessary initial data entries for project startup.
+
+## 4. Run the Project
+Once the services and database are set up, you can start the backend of the project with the following command:
+
+```bash
+bal run
+```

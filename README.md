@@ -17,7 +17,7 @@ The app connects students and tutors in a seamless way, allowing students to bro
 - **Book Sessions:** Students can book one-on-one sessions with selected tutors and attend these sessions via Google Meet.
 - **Chat Feature:** Students can chat with tutors for any clarification or communication.
 - **Session Management:** Students can reschedule sessions based on tutor availability.
-- **News Teller Subscription:** Students can subscribe to topics of interest and receive updates on the latest learning materials, blogs, and subject-related content.
+- **Newsletter Subscription:** Students can subscribe to topics of interest and receive updates on the latest learning materials, blogs, and subject-related content.
 - **Tutor Reviews:** Students can rate and review tutors based on their session experience.
 
 ### For Tutors:
@@ -41,6 +41,7 @@ The app connects students and tutors in a seamless way, allowing students to bro
 - **Kafka:** Utilized to publish metadata as emails to students subscribed to specific topics.
 - **GraphQL Interceptors:** Implemented to handle role-based authentication at the GraphQL service level.
 - **HTTP Interceptors:** Used to check for the presence of the authorization header in HTTP requests.
+- **WebSockets:** To enable real-time communication between students and tutors, providing instant messaging with bi-directional data flow and persistent message history.
 
 ## Challenges and Future Features
 

@@ -6,9 +6,9 @@
 DROP TABLE IF EXISTS `TutorNStudent`;
 DROP TABLE IF EXISTS `Review`;
 DROP TABLE IF EXISTS `Document`;
+DROP TABLE IF EXISTS `Booking`;
 DROP TABLE IF EXISTS `Session`;
 DROP TABLE IF EXISTS `Tutor`;
-DROP TABLE IF EXISTS `Booking`;
 DROP TABLE IF EXISTS `Student`;
 DROP TABLE IF EXISTS `AuthCredentials`;
 DROP TABLE IF EXISTS `Subject`;
@@ -38,16 +38,6 @@ CREATE TABLE `Student` (
 	FOREIGN KEY(`credentialsCredId`) REFERENCES `AuthCredentials`(`credId`),
 	PRIMARY KEY(`studentId`)
 );
-
-CREATE TABLE `Booking` (
-	`bookingId` INT AUTO_INCREMENT,
-	`sessionSessionId` INT UNIQUE NOT NULL,
-	FOREIGN KEY(`sessionSessionId`) REFERENCES `Session`(`sessionId`),
-	`studentStudentId` INT NOT NULL,
-	FOREIGN KEY(`studentStudentId`) REFERENCES `Student`(`studentId`),
-	PRIMARY KEY(`bookingId`)
-);
-
 CREATE TABLE `Tutor` (
 	`tutorId` INT AUTO_INCREMENT,
 	`firstName` VARCHAR(191) NOT NULL,
@@ -74,6 +64,19 @@ CREATE TABLE `Session` (
 	FOREIGN KEY(`tutorTutorId`) REFERENCES `Tutor`(`tutorId`),
 	PRIMARY KEY(`sessionId`)
 );
+
+CREATE TABLE `Booking` (
+	`bookingId` INT AUTO_INCREMENT,
+	`sessionSessionId` INT UNIQUE NOT NULL,
+	FOREIGN KEY(`sessionSessionId`) REFERENCES `Session`(`sessionId`),
+	`studentStudentId` INT NOT NULL,
+	FOREIGN KEY(`studentStudentId`) REFERENCES `Student`(`studentId`),
+	PRIMARY KEY(`bookingId`)
+);
+
+
+
+
 
 CREATE TABLE `Document` (
 	`id` INT AUTO_INCREMENT,

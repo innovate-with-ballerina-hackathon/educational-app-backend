@@ -32,6 +32,7 @@ public type Session record {|
     time:Civil endingTime;
     SessionStatus status;
     string? eventId;
+    string? eventUrl;
 
     string timeZoneOffset;
     string utcOffset;
@@ -44,6 +45,7 @@ public type SessionOptionalized record {|
     time:Civil endingTime?;
     SessionStatus status?;
     string? eventId?;
+    string? eventUrl?;
     string timeZoneOffset?;
     string utcOffset?;
 |};
@@ -62,6 +64,7 @@ public type SessionInsert record {|
     time:Civil endingTime;
     SessionStatus status;
     string? eventId;
+    string? eventUrl;
     string timeZoneOffset;
     string utcOffset;
 |};
@@ -72,6 +75,7 @@ public type SessionUpdate record {|
     time:Civil endingTime?;
     SessionStatus status?;
     string? eventId?;
+    string? eventUrl?;
     string timeZoneOffset?;
     string utcOffset?;
 |};

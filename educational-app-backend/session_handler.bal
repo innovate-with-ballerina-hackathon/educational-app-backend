@@ -7,6 +7,7 @@ import ballerina/mime;
 import ballerina/persist;
 import ballerina/regex;
 import ballerina/time;
+import ballerinax/googleapis.gcalendar;
 
 ftp:ClientConfiguration ftpConfig = {
     protocol: ftp:FTP,
@@ -234,8 +235,10 @@ service http:InterceptableService /users on new http:Listener(9091) {
         datasource:Session session = check self.dbClient->/sessions/[sessionId];
         datasource:Tutor tutor = check self.dbClient->/tutors/[session.tutorTutorId];
         datasource:Student student = check self.dbClient->/students/[studentId];
-        string event_id = check createEventByPost(session, tutor, student);
-        datasource:Session|persist:Error updatedSession = self.dbClient->/sessions/[sessionId].put({eventId: event_id, status: datasource:BOOKED});
+        gcalendar:Event event = check createEventByPost(session, tutor, student);
+        string eventId = <string>event.id;
+        string eventUrl = <string>event.hangoutLink;
+        datasource:Session|persist:Error updatedSession = self.dbClient->/sessions/[sessionId].put({eventUrl: eventUrl, eventId: eventId, status: datasource:BOOKED});
         //if enroling is successful
         if updatedSession is datasource:Session {
             _ = check self.dbClient->/tutornstudents.post([{tutorTutorId: tutor.tutorId, studentStudentId: student.studentId}]);

@@ -25,6 +25,7 @@ public type Session record {|
     time:Civil endingTime;
     SessionStatus status;
     string? eventId;
+    string? eventUrl;
     Booking? booking;
     string timeZoneOffset;
     string utcOffset;

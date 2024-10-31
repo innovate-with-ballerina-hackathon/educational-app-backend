@@ -30,9 +30,12 @@ INSERT INTO `Tutor` (`firstName`, `lastName`, `email`, `experienceYears`, `price
 ('Charlie', 'Johnson', 'charlie@example.com', 5, 50, 2, 1),
 ('David', 'Lee', 'david@example.com', 3, 40, 3, 2);
 
-INSERT INTO `Session` (`startingTime`, `endingTime`, `status`, `eventId`, `timeZoneOffset`, `utcOffset`, `tutorTutorId`) VALUES
-('2024-11-01 10:00:00', '2024-11-01 12:00:00', 'SCHEDULED', 'event_123', 'Asia/Colombo', '+05:30', 1),
-('2024-11-02 14:00:00', '2024-11-02 16:00:00', 'BOOKED', 'event_456', 'Asia/Colombo', '+05:30', 2);
+INSERT INTO `Session` (`startingTime`, `endingTime`, `status`, `eventId`, `eventUrl`, `timeZoneOffset`, `utcOffset`, `tutorTutorId`) VALUES
+('2024-11-01 10:00:00', '2024-11-01 12:00:00', 'SCHEDULED', 'event_123', 'http://example.com/event123', 'Asia/Colombo', '+05:30:00', 1),
+('2024-11-02 14:00:00', '2024-11-02 16:00:00', 'BOOKED', 'event_456', 'http://example.com/event456', 'Asia/Colombo', '+05:30:00', 2),
+('2024-11-03 09:00:00', '2024-11-03 11:00:00', 'CANCELLED', 'event_789', 'http://example.com/event789', 'Asia/Colombo', '+05:30:00', 1),
+('2024-11-04 15:00:00', '2024-11-04 17:00:00', 'ENDED', 'event_101', 'http://example.com/event101', 'Asia/Colombo', '+05:30:00', 2);
+
 
 INSERT INTO `Booking` (`sessionSessionId`, `studentStudentId`) VALUES 
 (1, 2), 

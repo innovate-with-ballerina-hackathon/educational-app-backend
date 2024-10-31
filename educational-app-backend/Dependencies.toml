@@ -107,7 +107,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "http"
-version = "2.12.1"
+version = "2.12.2"
 dependencies = [
 	{org = "ballerina", name = "auth"},
 	{org = "ballerina", name = "cache"},
@@ -491,7 +491,7 @@ modules = [
 [[package]]
 org = "ballerinax"
 name = "persist.sql"
-version = "1.4.0"
+version = "1.4.1"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"},
 	{org = "ballerina", name = "log"},

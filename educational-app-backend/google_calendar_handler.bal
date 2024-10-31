@@ -83,11 +83,11 @@ function createEvent(datasource:Session session, gcalendar:EventAttendee[] event
     return event;
 }
 
-function createEventByPost(datasource:Session session, datasource:Tutor tutor, datasource:Student student) returns string|error {
+function createEventByPost(datasource:Session session, datasource:Tutor tutor, datasource:Student student) returns gcalendar:Event|error {
     gcalendar:EventAttendee[] eventAttendees = [{email: tutor.email}, {email: student.email}];
     datasource:Subject subject = check dbClient->/subjects/[tutor.subjectSubjectId];
     gcalendar:Event event = check createEvent(session, eventAttendees, subject.name, tutor.firstName);
-    return <string>event.id;
+    return event;
 }
 
 function deleteEvent(string eventId) returns error? {
@@ -126,7 +126,7 @@ function updateEvent(string eventId, datasource:Session session) returns gcalend
     };
     string startingTimeString = check time:civilToString(civil2);
     string endingTimeString = check time:civilToString(civil3);
-    gcalendar:Event updatedEvent = check calendarClient->/calendars/[calendarId]/events/[eventId].put({
+    gcalendar:Event updatedEvent = check calendarClient->/calendars/[calendarId]/events/[eventId].patch({
         'start: {
             dateTime: startingTimeString,
             timeZone: "UTC"

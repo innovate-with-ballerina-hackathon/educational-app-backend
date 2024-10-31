@@ -108,7 +108,7 @@ service class ChatServerforStudent {
         }
 
         // Notify the tutor and student that the connection is established.
-        string msg = "Tutor " + self.tutor_id.toString() + " and Student " + self.student_id.toString() + " have joined the chat.";
+        string msg = "Student " + self.student_id.toString() + " have joined the chat.";
         io:println(msg);
     }
 

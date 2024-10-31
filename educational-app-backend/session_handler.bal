@@ -236,6 +236,11 @@ service http:InterceptableService /users on new http:Listener(9091) {
         datasource:Student student = check self.dbClient->/students/[studentId];
         string event_id = check createEventByPost(session, tutor, student);
         datasource:Session|persist:Error updatedSession = self.dbClient->/sessions/[sessionId].put({eventId: event_id, status: datasource:BOOKED});
+        //if enroling is successful
+        if updatedSession is datasource:Session {
+            _ = check self.dbClient->/tutornstudents.post([{tutorTutorId: tutor.tutorId, studentStudentId: student.studentId}]);
+            return caller->respond(updatedSession);
+        }
         return caller->respond(updatedSession);
     }
 

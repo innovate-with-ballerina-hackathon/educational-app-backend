@@ -3,8 +3,9 @@ import ballerina/websocket;
 import ballerina/sql;
 import ballerinax/mysql;
 import ballerinax/mysql.driver as _;
-map<websocket:Caller> connectionsMap = {};
 import ballerina/time;
+
+map<websocket:Caller> connectionsMap = {};
 
 // Define constant keys for storing IDs as attributes in the WebSocket session.
 const string TUTOR_ID_KEY = "tutor_id";
@@ -40,7 +41,7 @@ service /chat/student on Chat {
     resource function get [int tutor_id]/[int student_id]() returns websocket:Service|websocket:UpgradeError {
         // Return a new service for each connection, tied to the specific tutor and student.
         string previous_messages = "";
-       stream<MessageRead, sql:Error?> messages = self.db->query(`SELECT * FROM tutoring.messages WHERE (sender_id = ${tutor_id} AND receiver_id = ${student_id}) OR (sender_id = ${student_id} AND receiver_id = ${tutor_id});`);
+        stream<MessageRead, sql:Error?> messages = self.db->query(`SELECT * FROM tutoring.messages WHERE (sender_id = ${tutor_id} AND receiver_id = ${student_id}) OR (sender_id = ${student_id} AND receiver_id = ${tutor_id});`);
         MessageRead[]|error messages_arr = from MessageRead s in messages
                              select s;
         if messages_arr is MessageRead[] {
@@ -117,7 +118,7 @@ service class ChatServerforStudent {
 remote function onMessage(websocket:Caller caller, string text) returns error? {
     string msg = "Message from Student " + self.student_id.toString() + " to Tutor " + self.tutor_id.toString() + ": " + text;
     time:Utc currentUtc = time:utcNow();
-    string utcString = time:utcToString(utc);
+    string utcString = time:utcToString(currentUtc);
     // Store the message in the database
     MessageWrite message = {
         sender_id: self.student_id,
@@ -190,7 +191,7 @@ service class ChatServerforTeacher {
     remote function onMessage(websocket:Caller caller, string text) returns error? {
     string msg = "Message from Tutor " + self.tutor_id.toString() + " to Student " + self.student_id.toString() + ": " + text;
     time:Utc currentUtc = time:utcNow();
-    string utcString = time:utcToString(utc);
+    string utcString = time:utcToString(currentUtc);
     // Store the message in the database
     MessageWrite message = {
         sender_id: self.tutor_id,

@@ -354,7 +354,7 @@ service http:InterceptableService /users on new http:Listener(9091) {
     }
 
     // resource to add a category to a student
-    resource function put students/[int studentId]/category(datasource:Category subscribedCategory) returns http:Created|http:NotFound|http:InternalServerError|error {
+    resource function put students/[int studentId]/category(@http:Payload datasource:Category subscribedCategory) returns http:Created|http:NotFound|http:InternalServerError|error {
         datasource:Student|persist:Error addCategory = self.dbClient->/students/[studentId].put({subscribedCategory: subscribedCategory});
         if addCategory is persist:Error {
             if addCategory is persist:NotFoundError {
@@ -428,5 +428,14 @@ service http:InterceptableService /users on new http:Listener(9091) {
         else {
             check caller->respond("No file found in the request.");
         }
+    }
+
+    //resource to get all the documents uploaded by a tutor
+    resource function get tutor/[int tutorId]/documents() returns datasource:Document[]|http:InternalServerError|http:NotFound|error {
+        stream<datasource:Document, persist:Error?> documents = self.dbClient->/documents();
+        datasource:Document[] documentArray = check from datasource:Document document in documents
+            where document.tutorTutorId == tutorId
+            select document;
+        return documentArray;  
     }
 }

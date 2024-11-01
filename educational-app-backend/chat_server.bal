@@ -28,7 +28,8 @@ service /chat/student on Chat {
 
             if messages is datasource:Message[] {
                 foreach var message in messages {
-                    previous_messages = previous_messages + message.message + "\n";
+                    string time= time:utcToString(message.timeStamp);
+                    previous_messages = previous_messages + message.senderType+" - "+time.substring(11,16)+"\n"+message.message + "\n";
                 }
             }
             return new ChatServerforStudent(tutor_id, student_id, previous_messages);
@@ -52,7 +53,8 @@ service /chat/tutor on Chat {
 
             if messages is datasource:Message[] {
                 foreach var message in messages {
-                    previous_messages = previous_messages + message.message + "\n";
+                    string time= time:utcToString(message.timeStamp);
+                    previous_messages = previous_messages + message.senderType+" - "+time.substring(11,16)+"\n"+message.message + "\n";
                 }
             }
             return new ChatServerforTeacher(tutor_id, student_id, previous_messages);
@@ -77,10 +79,6 @@ service class ChatServerforStudent {
 
     // When a new WebSocket connection is opened.
     remote function onOpen(websocket:Caller caller) returns error? {
-        // Welcome message when connection is established.
-        string welcomeMsg = "Hi! You have successfully connected to the chat between Tutor "
-                            + self.tutor_id.toString() + " and Student " + self.student_id.toString();
-        check caller->writeMessage(welcomeMsg);
         check caller->writeMessage("Previous messages:\n" + self.previous_messages);
         // Store the tutor_id and student_id as attributes on the WebSocket session.
         caller.setAttribute(TUTOR_ID_KEY, self.tutor_id.toString());
@@ -126,8 +124,8 @@ service class ChatServerforStudent {
             _ = connectionsMap.remove(getConnectionKey(self.tutor_id, self.student_id, "student"));
         }
         //string tutor = check getUsername(caller, TUTOR_ID_KEY);
-        string student = check getUsername(caller, STUDENT_ID_KEY);
-        string msg = student + " left the chat.";
+        //string student = check getUsername(caller, STUDENT_ID_KEY);
+        string msg = "student" + " left the chat.";
 
         io:println(msg); // Log the disconnect.
     }
@@ -149,10 +147,6 @@ service class ChatServerforTeacher {
 
     // When a new WebSocket connection is opened.
     remote function onOpen(websocket:Caller caller) returns error? {
-        // Welcome message when connection is established.
-        string welcomeMsg = "Hi! You have successfully connected to the chat between Tutor "
-                            + self.tutor_id.toString() + " and Student " + self.student_id.toString();
-        check caller->writeMessage(welcomeMsg);
         check caller->writeMessage("Previous messages:\n" + self.previous_messages);
         // Store the tutor_id and student_id as attributes on the WebSocket session.
         caller.setAttribute(TUTOR_ID_KEY, self.tutor_id.toString());
@@ -197,9 +191,9 @@ service class ChatServerforTeacher {
         lock {
             _ = connectionsMap.remove(getConnectionKey(self.tutor_id, self.student_id, "tutor"));
         }
-        string tutor = check getUsername(caller, TUTOR_ID_KEY);
-        string student = check getUsername(caller, STUDENT_ID_KEY);
-        string msg = "Tutor " + tutor + " and Student " + student + " left the chat.";
+        // string tutor = check getUsername(caller, TUTOR_ID_KEY);
+        // string student = check getUsername(caller, STUDENT_ID_KEY);
+        string msg = "Tutor " + " and Student " + " left the chat.";
 
         io:println(msg); // Log the disconnect.
     }
@@ -229,9 +223,9 @@ function getConnectionKey(int tutor_id, int student_id, string role) returns str
     return "";
 }
 
-function getUsername(websocket:Caller caller, string key) returns string|error {
-    return <string>check caller.getAttribute(key);
-}
+// function getUsername(websocket:Caller caller, string key) returns string|error {
+//     return <string>check caller.getAttribute(key);
+// }
 
 // Send the message to the relevant student
 function sendMessageToRelevantStudent(int tutor_id, int student_id, string text, string role) returns error? {

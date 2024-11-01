@@ -95,7 +95,7 @@ CREATE TABLE `Document` (
 	`title` VARCHAR(191) NOT NULL,
 	`description` VARCHAR(191) NOT NULL,
 	`category` ENUM('NOT_SPECIFIED', 'MATHS', 'ASTRO', 'PHYSICS', 'CHEMISTRY', 'GEOMETRY', 'ENGLISH', 'FRENCH', 'GERMAN', 'BIOLOGY') NOT NULL,
-	`tutorTutorId` INT UNIQUE NOT NULL,
+	`tutorTutorId` INT NOT NULL,
 	FOREIGN KEY(`tutorTutorId`) REFERENCES `Tutor`(`tutorId`),
 	PRIMARY KEY(`id`)
 );

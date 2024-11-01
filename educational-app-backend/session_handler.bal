@@ -258,6 +258,15 @@ service http:InterceptableService /users on new http:Listener(9091) {
             select session;
     }
 
+    //resource to get all the booked session for a given tutor
+    resource function get tutor/[int tutorId]/booked() returns datasource:Session[]|error {
+        stream<datasource:Session, persist:Error?> sessions = self.dbClient->/sessions();
+        return from datasource:Session session in sessions
+            where session.tutorTutorId == tutorId &&
+            session.status == datasource:BOOKED
+            select session;    
+    }
+
     //resource to handle get requests for upcoming sessions for a given student
     resource function get sessions/[int studentId]() returns http:InternalServerError & readonly|http:NotFound & readonly|datasource:Session[]|error {
         stream<datasource:Booking, persist:Error?> bookings = self.dbClient->/bookings();

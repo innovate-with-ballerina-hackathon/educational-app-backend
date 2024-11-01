@@ -11,12 +11,24 @@ DROP TABLE IF EXISTS `Session`;
 DROP TABLE IF EXISTS `Tutor`;
 DROP TABLE IF EXISTS `Student`;
 DROP TABLE IF EXISTS `AuthCredentials`;
+DROP TABLE IF EXISTS `Message`;
 DROP TABLE IF EXISTS `Subject`;
 
 CREATE TABLE `Subject` (
 	`subjectId` INT AUTO_INCREMENT,
 	`name` VARCHAR(191) NOT NULL,
 	PRIMARY KEY(`subjectId`)
+);
+
+CREATE TABLE `Message` (
+	`id` INT AUTO_INCREMENT,
+	`senderId` INT NOT NULL,
+	`receiverId` INT NOT NULL,
+	`message` VARCHAR(191) NOT NULL,
+	`timeStamp` TIMESTAMP NOT NULL,
+	`senderType` VARCHAR(191) NOT NULL,
+	`receiverType` VARCHAR(191) NOT NULL,
+	PRIMARY KEY(`id`)
 );
 
 CREATE TABLE `AuthCredentials` (
@@ -38,7 +50,6 @@ CREATE TABLE `Student` (
 	FOREIGN KEY(`credentialsCredId`) REFERENCES `AuthCredentials`(`credId`),
 	PRIMARY KEY(`studentId`)
 );
-
 
 
 CREATE TABLE `Tutor` (

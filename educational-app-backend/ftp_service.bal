@@ -28,15 +28,18 @@ service on fileListener {
             log:printInfo(string `New Document has been uploaded: ${addedFile.name}`);
             stream<datasource:Document, persist:Error?> documentStream = dbClient->/documents();
             datasource:Document[] documents = check from datasource:Document document in documentStream
-            where document.fileName == addedFile.toString() select document;
+            where document.fileName == addedFile.name select document;
             foreach datasource:Document document in documents {
                 //datasource:Category category = document.category;
                 return check self.producer->send({
                 topic: kafkaTopic,
                 value: {
-                    title: document.title,
-                    description: document.description,
-                    fileName: document.fileName
+                    id : document.id,
+                    fileName : document.fileName,
+                    title : document.title,
+                    description : document.description,
+                    category : document.category,
+                    tutorTutorId : document.tutorTutorId
                 }
             });
             }

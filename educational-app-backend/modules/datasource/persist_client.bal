@@ -17,6 +17,7 @@ const AUTH_CREDENTIALS = "authcredentials";
 const TUTOR = "tutors";
 const SUBJECT = "subjects";
 const STUDENT = "students";
+const MESSAGE = "messages";
 const TUTOR_N_STUDENT = "tutornstudents";
 const DOCUMENT = "documents";
 
@@ -254,6 +255,20 @@ public isolated client class Client {
                 booking: {entity: Booking, fieldName: "booking", refTable: "Booking", refColumns: ["studentStudentId"], joinColumns: ["studentId"], 'type: psql:MANY_TO_ONE}
             }
         },
+        [MESSAGE]: {
+            entityName: "Message",
+            tableName: "Message",
+            fieldMetadata: {
+                id: {columnName: "id", dbGenerated: true},
+                senderId: {columnName: "senderId"},
+                receiverId: {columnName: "receiverId"},
+                message: {columnName: "message"},
+                timeStamp: {columnName: "timeStamp"},
+                senderType: {columnName: "senderType"},
+                receiverType: {columnName: "receiverType"}
+            },
+            keyFields: ["id"]
+        },
         [TUTOR_N_STUDENT]: {
             entityName: "TutorNStudent",
             tableName: "TutorNStudent",
@@ -320,6 +335,7 @@ public isolated client class Client {
             [TUTOR]: check new (dbClient, self.metadata.get(TUTOR), psql:MYSQL_SPECIFICS),
             [SUBJECT]: check new (dbClient, self.metadata.get(SUBJECT), psql:MYSQL_SPECIFICS),
             [STUDENT]: check new (dbClient, self.metadata.get(STUDENT), psql:MYSQL_SPECIFICS),
+            [MESSAGE]: check new (dbClient, self.metadata.get(MESSAGE), psql:MYSQL_SPECIFICS),
             [TUTOR_N_STUDENT]: check new (dbClient, self.metadata.get(TUTOR_N_STUDENT), psql:MYSQL_SPECIFICS),
             [DOCUMENT]: check new (dbClient, self.metadata.get(DOCUMENT), psql:MYSQL_SPECIFICS)
         };
@@ -602,6 +618,46 @@ public isolated client class Client {
             sqlClient = self.persistClients.get(STUDENT);
         }
         _ = check sqlClient.runDeleteQuery(studentId);
+        return result;
+    }
+
+    isolated resource function get messages(MessageTargetType targetType = <>, sql:ParameterizedQuery whereClause = ``, sql:ParameterizedQuery orderByClause = ``, sql:ParameterizedQuery limitClause = ``, sql:ParameterizedQuery groupByClause = ``) returns stream<targetType, persist:Error?> = @java:Method {
+        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
+        name: "query"
+    } external;
+
+    isolated resource function get messages/[int id](MessageTargetType targetType = <>) returns targetType|persist:Error = @java:Method {
+        'class: "io.ballerina.stdlib.persist.sql.datastore.MySQLProcessor",
+        name: "queryOne"
+    } external;
+
+    isolated resource function post messages(MessageInsert[] data) returns int[]|persist:Error {
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(MESSAGE);
+        }
+        sql:ExecutionResult[] result = check sqlClient.runBatchInsertQuery(data);
+        return from sql:ExecutionResult inserted in result
+            where inserted.lastInsertId != ()
+            select <int>inserted.lastInsertId;
+    }
+
+    isolated resource function put messages/[int id](MessageUpdate value) returns Message|persist:Error {
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(MESSAGE);
+        }
+        _ = check sqlClient.runUpdateQuery(id, value);
+        return self->/messages/[id].get();
+    }
+
+    isolated resource function delete messages/[int id]() returns Message|persist:Error {
+        Message result = check self->/messages/[id].get();
+        psql:SQLClient sqlClient;
+        lock {
+            sqlClient = self.persistClients.get(MESSAGE);
+        }
+        _ = check sqlClient.runDeleteQuery(id);
         return result;
     }
 

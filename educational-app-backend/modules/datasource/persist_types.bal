@@ -315,6 +315,46 @@ public type StudentUpdate record {|
     Category? subscribedCategory?;
 |};
 
+public type Message record {|
+    readonly int id;
+    int senderId;
+    int receiverId;
+    string message;
+    time:Utc timeStamp;
+    string senderType;
+    string receiverType;
+|};
+
+public type MessageOptionalized record {|
+    int id?;
+    int senderId?;
+    int receiverId?;
+    string message?;
+    time:Utc timeStamp?;
+    string senderType?;
+    string receiverType?;
+|};
+
+public type MessageTargetType typedesc<MessageOptionalized>;
+
+public type MessageInsert record {|
+    int senderId;
+    int receiverId;
+    string message;
+    time:Utc timeStamp;
+    string senderType;
+    string receiverType;
+|};
+
+public type MessageUpdate record {|
+    int senderId?;
+    int receiverId?;
+    string message?;
+    time:Utc timeStamp?;
+    string senderType?;
+    string receiverType?;
+|};
+
 public type TutorNStudent record {|
     readonly int id;
     int tutorTutorId;

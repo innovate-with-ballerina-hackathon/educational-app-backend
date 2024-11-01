@@ -142,6 +142,17 @@ public type Student record{|
     
 |};
 
+public type Message record {|
+    @sql:Generated
+    readonly int id;
+    int senderId;
+    int receiverId;
+    string message;
+    time:Utc timeStamp;
+    string senderType;
+    string receiverType;
+|};
+
 public type TutorNStudent record {| 
     @sql:Generated
     readonly int id;

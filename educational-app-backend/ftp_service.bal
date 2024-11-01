@@ -4,6 +4,7 @@ import ballerina/ftp;
 import ballerina/log;
 import ballerinax/kafka;
 import ballerina/persist;
+import ballerina/io;
 
 listener ftp:Listener fileListener = new ({
     host: "localhost",
@@ -26,6 +27,9 @@ service on fileListener {
     remote function onFileChange(ftp:WatchEvent & readonly event, ftp:Caller caller) returns error? {
         foreach ftp:FileInfo addedFile in event.addedFiles {
             log:printInfo(string `New Document has been uploaded: ${addedFile.name}`);
+             stream<byte[] & readonly, io:Error?> fileStream = check caller->get(addedFile.pathDecoded);
+            check io:fileWriteBlocksFromStream(string `./local/${addedFile.name}`, fileStream);
+            check fileStream.close();
             stream<datasource:Document, persist:Error?> documentStream = dbClient->/documents();
             datasource:Document[] documents = check from datasource:Document document in documentStream
             where document.fileName == addedFile.name select document;

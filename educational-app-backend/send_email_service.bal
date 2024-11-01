@@ -4,6 +4,7 @@ import ballerina/log;
 import ballerina/persist;
 import ballerinax/googleapis.gmail;
 import ballerinax/kafka;
+import ballerina/mime;
 
 configurable string kafkaGroupId = ?;
 configurable string kafkaTopic = ?;
@@ -62,6 +63,12 @@ service on kafkaListener {
 }
 
 function sendSubscriptionEmail(gmail:Client gmail, string email, datasource:Document document) returns error? {
+    gmail:AttachmentFile attachmentFile= {
+        mimeType: mime:APPLICATION_PDF,
+        name: "File.pdf",
+        path: "./local/" + document.fileName
+    };
+    
     datasource:Tutor tutor = check dbClient->/tutors/[document.tutorTutorId];
     gmail:MessageRequest message = {
         to: [email],
@@ -81,7 +88,8 @@ function sendSubscriptionEmail(gmail:Client gmail, string email, datasource:Docu
                                             <p>${companyName} Team</p>
                                         </body>
                                     </head>
-                                </html>`
+                                </html>`,
+        attachments: [attachmentFile]
     };
     _ = check gmail->/users/me/messages/send.post(message);
 
